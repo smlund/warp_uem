@@ -13,6 +13,7 @@ lund@frib.msu.edu
 Brandon Zerbe 
 Physics and Astronomy Department
 Michigan State University
+zerbe@msu.edu 
 
 
 To initialize the repository, 
