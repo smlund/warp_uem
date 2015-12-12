@@ -1,7 +1,7 @@
 warp_uem
 Git repository of Warp simulation scripts/tools to model the UEM 
 ultra-intense electron microscope experiment at 
-Michigan State University 
+Michigan State University. 
 
 Professor Steven M. Lund
 Physics and Astronomy Department
@@ -10,7 +10,7 @@ Michigan State University
 lund@frib.msu.edu
 517-908-7291
 
-Brandon Zerbe 
+Dr. Brandon Zerbe 
 Physics and Astronomy Department
 Michigan State University
 zerbe@msu.edu 
