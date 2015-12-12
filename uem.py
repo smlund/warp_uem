@@ -46,7 +46,7 @@ simtype = "wrz"   # rz axisymmetric
 #     * Assume potential 0 (ground) at physical anode at z = d_plates to 
 #       specify reference potential   
 #
-grad      = 0.*MV    # Electric field gradient [V/m] 
+grad      = 1.*MV    # Electric field gradient [V/m] 
 d_plates  = 5.*mm    # Plate seperation [m]
 r_plate   = 1.0      # Radius plate (take large) [m]
 t_plate   = 1.*mm    # Thickness plate (take large) [m] 
@@ -213,16 +213,18 @@ for ii in range(n_inj):
   pz_inj[ii] = p_data['pz']*convert/weight  
 
 # Define function to inject electrons macroparticles each time step.
-#  * Installed in particle advance loop by user defined function injectelectrons()
-#  * Call set by installuserinjection() 
+#  * Installed in particle advance loop by user defined function injectelectrons() defined below. 
+#  * Function placed in time advance cycle by installuserinjection(user_function) used below.  
 #  * Present version assumes nonrelativisit dynamics for all injected electrons.  After injection, 
 #    electrons can be advanced relativisitically or not depending on setting of top.lrelativ .  
 #  * Works by finding all birthed particles between present time (top.time) and next time step 
 #    (top.time + top.dt) and injecting those particles.   
 #  * If flag adj_inject = True/False, then injected particle coordinates are/are not 
 #    adjusted to account for difference of birth time and time at end of timestep. This just 
-#    adjusts positions in a free-streaming NR sense. If adj_inject_p = True/False the momenta 
-#    are also NR adjusted with the self-consistent E-field data using the Lorentz force eqn.  
+#    adjusts positions in a free-streaming NR sense. If adj_inject_p = True/False the momenta/velocities 
+#    are also NR adjusted with the self-consistent EM-field data using the Lorentz force eqn.  
+#  * In the above correction of momenta/velocities the magnetic field will only be nonzero if the 
+#    simulation is electromagnetic.
 
 adj_inject   = True 
 adj_inject_p = True   
@@ -258,14 +260,14 @@ def injectelectrons():
       ex = zeros(ninj); ey = zeros(ninj); ez = zeros(ninj) 
       bx = zeros(ninj); by = zeros(ninj); bz = zeros(ninj)
       fetche3dfrompositions(electrons.sid,1,ninj,xinj,yinj,zinj,ex,ey,ez,bx,by,bz)
-      vxinj += -(echarge/emass)*ex*dt  
-      vyinj += -(echarge/emass)*ey*dt
-      vzinj += -(echarge/emass)*ez*dt
+      vxinj += -(echarge/emass)*ex*dt - (echarge/emass)*(vyinj*bz-vzinj*by)*dt  
+      vyinj += -(echarge/emass)*ey*dt - (echarge/emass)*(vzinj*bx-vxinj*bz)*dt 
+      vzinj += -(echarge/emass)*ez*dt - (echarge/emass)*(vxinj*by-vzinj*bx)*dt 
   #
   # Inject electron macroparticles 
   electrons.addparticles(x=xinj,y=yinj,z=zinj,vx=vxinj,vy=vyinj,vz=vzinj,gi=giinj)
 
-installuserinjection(injectelectrons)   
+installuserinjection(injectelectrons)  # install injection function in timestep 
 
 #raise Exception("To Here")  
 
