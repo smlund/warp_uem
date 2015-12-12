@@ -108,7 +108,7 @@ w3d.zmmin =  zmin
 w3d.zmmax =  zmax 
 
 # --- mesh symmetry and boundary conditions 
-w3d.l4symtry = True      # use 4-fold perp symmetry in 3D 
+w3d.l4symtry = True      # use 4-fold perp symmetry in 3D fieldsolve  
 w3d.bound0   = dirichlet # probably does not matter since conductor on left 
 w3d.boundnz  = dirichlet # probably does not matter since conductor on right  
 w3d.boundxy  = neumann   # Probably better neumann but less efficient
@@ -251,11 +251,12 @@ def injectelectrons():
   # Adjust particle coordinates (Nonrelativistic formulas) to inject 
   if adj_inject:
     dt = (top.time + top.dt) - tinj
-    #
+    # coordinate correction 
     xinj += vxinj*dt 
     yinj += vyinj*dt 
     zinj += vzinj*dt 
-    #
+    # velocity correction using both E- and B-fields: B-field only 
+    #   nonzero for EM fieldsolve 
     if adj_inject_p:
       ex = zeros(ninj); ey = zeros(ninj); ez = zeros(ninj) 
       bx = zeros(ninj); by = zeros(ninj); bz = zeros(ninj)
@@ -282,9 +283,8 @@ installuserinjection(injectelectrons)  # install injection function in timestep
 #     Note:
 #       * Add entries to diag_times for diagnostics at additional times 
 #       * Order of entries in diag_times does not matter.  
-#       * Can use diag_times.append(new_time) to add new time entry new_time 
+#       * Can use diag_times.append(new_time) to add time entry new_time 
 #       * diag_steps caclulated from diag_times using t_step array 
-#       * 
 
 diag_t_max  = 120.*ps 
 diag_t_step =  20.*ps 
@@ -312,24 +312,29 @@ top.itmomnts[0:4]=[0,1000000,1,0]
 #top.zzplalways[0:4] =[0.,100000.,zmax/4.,0.]
 
 # Diagnostic function to make plots at particular steps 
-mr = 1.e-3
+mr = 1.e-3 # milli-radian conversion scale 
 def myplots():
   if not(top.it in diag_steps): return
   # time and position info to include on plot labels  
   z_cen = top.zbar[0,0]
-  t_label = "time = %8.4f ns, <z> = %6.4f mm"%(top.time/ns,z_cen/mm)
+  t_label = "time = %10.4f ps, <z> = %6.4f mm"%(top.time/ps,z_cen/mm)
   #  x-z projection 
   ppzx(xscale=1./mm,yscale=1./mm,titles=false)
   ptitles("x-z Projection Electrons","z [mm]","x [mm]",t_label)
   fma() 
   #  x-z projection with potential superimposed 
-  pfzx(xscale=1./mm,yscale=1./mm,titles=false)
-  ppzx(xscale=1./mm,yscale=1./mm,titles=false)
+  pfzx(     xscale=1./mm,yscale=1./mm,titles=false)
+  ppzx(iw=0,xscale=1./mm,yscale=1./mm,titles=false)
   ptitles("Potential and x-z Projection Electrons","z [mm]","x [mm]",t_label)
   fma()
-  # x-y projection 
-  ppxy(iw=0,lframe=true,color='density',ncolor=25,
-         titles=false,yscale=1./mm,xscale=1./mm)
+  # x-y projection: two ways black and white scatter plot and 
+  #                 colorized with intensity scale 
+  ppxy(iw=0,yscale=1./mm,xscale=1./mm,titles=false)
+  ptitles("x-y projection","x [mm]","y [mm]",t_label)
+  fma()  
+  # 
+  ppxy(iw=0,color='density',ncolor=25,
+       yscale=1./mm,xscale=1./mm,titles=false)
   ptitles("x-y projection","x [mm]","y [mm]",t_label)
   fma()  
   # x-x' projection: two ways black and white scatter plot and
@@ -338,17 +343,17 @@ def myplots():
   ptitles("x-x' projection","x [mm]","x' [mr]",t_label)
   fma() 
   #
-  ppxxp(lframe=true,slope='auto',color='density',ncolor=25,
-          titles=false,yscale=1./mr,xscale=1./mm)
+  ppxxp(iw=0,slope='auto',color='density',ncolor=25,
+        yscale=1./mr,xscale=1./mm,titles=false)
   ptitles("x-x' projection","x [mm]","x' [mr]",t_label)
   fma()
   # z - vz projection: two ways, black and white scatter plot and 
   #                    colorized with intensity scale 
-  ppzvz(yscale=1./mm,titles=false)
+  ppzvz(iw=0,yscale=1./mm,titles=false)
   ptitles("vz-z Projection Electrons","z [mm]","vz [m/s]",t_label)
   fma()
   # 
-  ppzvz(yscale=1./mm,titles=false,color='density',ncolor=25)
+  ppzvz(iw=0,yscale=1./mm,titles=false,color='density',ncolor=25)
   ptitles("vz-z Projection Electrons","z [mm]","vz [m/s]",t_label)
   fma()
   # mean vz vs z
@@ -391,8 +396,10 @@ def myplots():
   ptitles("rms x-x' (black) and y-y' (red) Emittance vs z",
           "z [mm]","Emittance [mm-mr]",t_label)
   fma() 
-  # normalized rms z-z' emittance vs z # FIX: unsure what z' units are!!! Edge measure?  
-  pzepsnz() 
+  # normalized rms z-z' emittance vs z # FIX: unsure what z' units are!!! 
+  #    Edge measure? Update labels and info when understood.    
+  pzepsnz(scale=1.,zscale=mm,titles=false) 
+  ptitles("rms z-z' Emittance vs z","z [mm]","Emittance [mm-mr]",t_label)
   fma() 
   # Current vs z
   pzcurr(scale=1./1.e-3,zscale=mm,titles=false)
@@ -433,23 +440,29 @@ generate()
 #     so the particles will see the applied field from the plate biases.   
 #solver.ldosolve = False
 
-# Make initial diagnostic plots of field 
+# Find indices of center coordinate of mesh for later diagnostic use 
+x_cen = 0. 
+y_cen = 0. 
+ix_cen = sum(where(w3d.xmesh <= x_cen,1,0))-1
+iy_cen = sum(where(w3d.ymesh <= y_cen,1,0))-1 
+
+
+# Make initial diagnostic plots of field (for simple check of fieldsolver)  
 
 # --- contour diode field 
-pcphizx(iy=nint(w3d.ny/2),xscale=1./mm,yscale=1./mm,
+pcphizx(iy=iy_cen,xscale=1./mm,yscale=1./mm,
   titlet="Initial (No Beam) ES Potenital Contours in y = 0 Plane",titleb="z [mm]",titlel="x [mm]") 
 fma() 
 
 # --- plot on axis potential 
-phiax = getphi(ix=nint((w3d.xmmax-w3d.xmmin)/(2.*w3d.dx)),
-               iy=nint((w3d.ymmax-w3d.ymmin)/(2.*w3d.dy)))
+phiax = getphi(ix=ix_cen,iy=iy_cen)
 plg(phiax/kV,w3d.zmesh/mm) 
 ptitles("Initial (No Beam) On-Axis (x=y=0) ES Potential","z [mm]","Phi [kV]")
 fma() 
 
-#raise Exception("To Here")  
+#raise Exception("Code Stopped Here")  
 
-# --- Advance simulation through each step interval set  
+# Advance simulation through each step interval set  
 for ii in range(len(adv_steps)):
   top.dt = adv_dt[ii]
   step(adv_steps[ii])  
@@ -460,7 +473,9 @@ for ii in range(len(adv_steps)):
 # Open interactive diagnostic window 
 # winon()
 
-# Some examples of code of potential use to write diagnostics 
+# Some examples of code to retrieve particle coordinates 
+# See warp.lbl.gov How To's for more info including tools to 
+# export simulation data: See Saving/Retrieving Data  
 # 
 #  getz()        # returns array of z-coordinates of macroparticles 
 #  getvz()       # returns array of vz values of macroparticle velocities  
