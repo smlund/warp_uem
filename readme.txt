@@ -34,3 +34,10 @@ me if you want to contribute and I will add you)
   % git add readme.txt 
   % git commit -m "SML: updated readme.txt file" 
   % git push 
+
+To run the program, add the directory where this readme.txt file is to your 
+python path:
+
+  export PYTHONPATH=$PYTHONPATH:$PWD
+
+This will allow python to find the modules in the import statement.
