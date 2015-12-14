@@ -396,10 +396,16 @@ def myplots():
   ptitles("rms x-x' (black) and y-y' (red) Emittance vs z",
           "z [mm]","Emittance [mm-mr]",t_label)
   fma() 
-  # normalized rms z-z' emittance vs z # FIX: unsure what z' units are!!! 
-  #    Edge measure? Update labels and info when understood.    
-  pzepsnz(scale=1.,zscale=mm,titles=false) 
-  ptitles("rms z-z' Emittance vs z","z [mm]","Emittance [mm-mr]",t_label)
+  # normalized rms z-z' emittance vs z 
+  #    From check of code in getzmmnts routine in top.F
+  #    * [epsnz] = meters 
+  #    *  zc  = z - zbar 
+  #       vzc = vz - vzbar 
+  #       epsnz = 4.*sqrt( <zc**2><vzc**2> - <zc*vzc>**2 )/clight  
+  #
+  pzepsnz(scale=1./(4.*mm),zscale=mm,titles=false) 
+  ptitles("Normalized rms z-z' Emittance vs z",
+          "z [mm]","Emittance [mm-mr]",t_label)
   fma() 
   # Current vs z
   pzcurr(scale=1./1.e-3,zscale=mm,titles=false)
