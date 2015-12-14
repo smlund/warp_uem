@@ -71,7 +71,7 @@ simtype = "wrz"   # rz axisymmetric
 #     * Assume potential 0 (ground) at physical anode at z = d_plates to 
 #       specify reference potential   
 #
-grad      = args.extraction_field    # Electric field gradient [V/m] 
+grad      = args.extraction_field*MV    # Electric field gradient [V/m] 
 d_plates  = 5.*mm    # Plate seperation [m]
 r_plate   = 1.0      # Radius plate (take large) [m]
 t_plate   = 1.*mm    # Thickness plate (take large) [m] 
