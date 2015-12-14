@@ -427,16 +427,15 @@ top.lhcurrz  = True
 
 
 # Generate the PIC code
+#   * 3D code "w3d" is always used here: 3d mover is same and 
+#       field solver setup different for rz and 3d code. 
+#   * DO NOT use package("wrz"). This uses old r-z code by 
+#       Debbie Callahan that has not been maintained.  
 #   * Initial field solve will be carried out on generate() call 
 #   * Since no particles are present till timesteps are taken, 
 #       the initial field will not include emitted electrons.  
 
-if simtype == "w3d": 
-  package("w3d") 
-elif simtype == "wrz": 
-  package("wrz") 
-else:
-  raise Exception("Error: simtype not defined")
+package("w3d") 
 generate() 
 
 # Turn off field solver (for runs with applied field but no self feilds)
