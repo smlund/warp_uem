@@ -421,10 +421,16 @@ def myplots():
   ptitles("rms x-x' (black) and y-y' (red) Emittance vs z",
           "z [mm]","Emittance [mm-mr]",t_label)
   fma() 
-  # normalized rms z-z' emittance vs z # FIX: unsure what z' units are!!! 
-  #    Edge measure? Update labels and info when understood.    
-  pzepsnz(scale=1.,zscale=mm,titles=false) 
-  ptitles("rms z-z' Emittance vs z","z [mm]","Emittance [mm-mr]",t_label)
+  # normalized rms z-z' emittance vs z 
+  #    From check of code in getzmmnts routine in top.F
+  #    * [epsnz] = meters 
+  #    *  zc  = z - zbar 
+  #       vzc = vz - vzbar 
+  #       epsnz = 4.*sqrt( <zc**2><vzc**2> - <zc*vzc>**2 )/clight  
+  #
+  pzepsnz(scale=1./(4.*mm),zscale=mm,titles=false) 
+  ptitles("Normalized rms z-z' Emittance vs z",
+          "z [mm]","Emittance [mm-mr]",t_label)
   fma() 
   # Current vs z
   pzcurr(scale=1./1.e-3,zscale=mm,titles=false)
@@ -446,16 +452,15 @@ top.lhcurrz  = True
 
 
 # Generate the PIC code
+#   * 3D code "w3d" is always used here: 3d mover is same and 
+#       field solver setup different for rz and 3d code. 
+#   * DO NOT use package("wrz"). This uses old r-z code by 
+#       Debbie Callahan that has not been maintained.  
 #   * Initial field solve will be carried out on generate() call 
 #   * Since no particles are present till timesteps are taken, 
 #       the initial field will not include emitted electrons.  
 
-if simtype == "w3d": 
-  package("w3d") 
-elif simtype == "wrz": 
-  package("wrz") 
-else:
-  raise Exception("Error: simtype not defined")
+package("w3d") 
 generate() 
 
 # Turn off field solver (for runs with applied field but no self feilds)
