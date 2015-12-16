@@ -48,6 +48,10 @@ parser.add_argument('-m','--electron_per_macroparticle',
 
 args = parser.parse_args()
 
+from diagnostics.diagnostic_classes import DiagnosticsBySteps
+from diagnostics.steves_diagnostics import steves_plots, steves_initial_plots
+from discrete_fourspace.time import get_steps_by_regular_time_interval
+from discrete_fourspace.mesh import get_supremum_index
 from warp import *
 #from histplot import *
 
@@ -311,13 +315,8 @@ installuserinjection(injectelectrons)  # install injection function in timestep
 #       * Can use diag_times.append(new_time) to add time entry new_time 
 #       * diag_steps caclulated from diag_times using t_step array 
 
-diag_t_max  = 120.*ps 
-diag_t_step =  20.*ps 
-diag_times = arange(diag_t_step,diag_t_max,diag_t_step) 
-
-diag_steps = [] 
-for it in range(len(diag_times)):
-  diag_steps.append(sum(where(t_step < diag_times[it], 1, 0)))
+t_step_iterations = get_steps_by_regular_time_interval(t_step, 20.*ps)
+diagnostics = DiagnosticsBySteps(top,t_step_iterations,steves_plots)
 
 # --- Set up diagnostic windows.
 #w3d.dz = (w3d.zmmax - w3d.zmmin)/w3d.nz
@@ -336,112 +335,8 @@ top.itmomnts[0:4]=[0,1000000,1,0]
 #top.zzplseldom[0:4] =[0.,100000.,zmax/4.,0.]
 #top.zzplalways[0:4] =[0.,100000.,zmax/4.,0.]
 
-# Diagnostic function to make plots at particular steps 
-mr = 1.e-3 # milli-radian conversion scale 
-def myplots():
-  if not(top.it in diag_steps): return
-  # time and position info to include on plot labels  
-  z_cen = top.zbar[0,0]
-  t_label = "time = %10.4f ps, <z> = %6.4f mm"%(top.time/ps,z_cen/mm)
-  #  x-z projection 
-  ppzx(xscale=1./mm,yscale=1./mm,titles=false)
-  ptitles("x-z Projection Electrons","z [mm]","x [mm]",t_label)
-  fma() 
-  #  x-z projection with potential superimposed 
-  pfzx(     xscale=1./mm,yscale=1./mm,titles=false)
-  ppzx(iw=0,xscale=1./mm,yscale=1./mm,titles=false)
-  ptitles("Potential and x-z Projection Electrons","z [mm]","x [mm]",t_label)
-  fma()
-  # x-y projection: two ways black and white scatter plot and 
-  #                 colorized with intensity scale 
-  ppxy(iw=0,yscale=1./mm,xscale=1./mm,titles=false)
-  ptitles("x-y projection","x [mm]","y [mm]",t_label)
-  fma()  
-  # 
-  ppxy(iw=0,color='density',ncolor=25,
-       yscale=1./mm,xscale=1./mm,titles=false)
-  ptitles("x-y projection","x [mm]","y [mm]",t_label)
-  fma()  
-  # x-x' projection: two ways black and white scatter plot and
-  #                  colorized with intensity scale and slope removed 
-  ppxxp(iw=0,xscale=1./mr,yscale=1./mm,titles=false) 
-  ptitles("x-x' projection","x [mm]","x' [mr]",t_label)
-  fma() 
-  #
-  ppxxp(iw=0,slope='auto',color='density',ncolor=25,
-        yscale=1./mr,xscale=1./mm,titles=false)
-  ptitles("x-x' projection","x [mm]","x' [mr]",t_label)
-  fma()
-  # z - vz projection: two ways, black and white scatter plot and 
-  #                    colorized with intensity scale 
-  ppzvz(iw=0,yscale=1./mm,titles=false)
-  ptitles("vz-z Projection Electrons","z [mm]","vz [m/s]",t_label)
-  fma()
-  # 
-  ppzvz(iw=0,yscale=1./mm,titles=false,color='density',ncolor=25)
-  ptitles("vz-z Projection Electrons","z [mm]","vz [m/s]",t_label)
-  fma()
-  # mean vz vs z
-  pzvzbar(scale=1./mm,zscale=mm,titles=false)
-  ptitles("Mean vz vs z","z [mm]","<vz> [m/s]",t_label)
-  fma()
-  # rms vz vs z 
-  pzvzrms(zscale=mm,titles=false)
-  ptitles("rms vz vs z","z [mm]","rms vz [m/s]",t_label)
-  fma() 
-  # rms x,y vs z 
-  pzxrms(scale=1./mm,zscale=mm,titles=false) 
-  pzyrms(scale=1./mm,zscale=mm,titles=false,color=red)
-  ptitles("rms x (black) and y (red) vs z","z [mm]","rms x,y [mm]",t_label)
-  fma()  
-  # rms r vs z 
-  pzrrms(scale=1./mm,zscale=mm,titles=false)
-  ptitles("rms Transverse r vs z","z [mm]","rms r [mm]",t_label)
-  fma()  
-  # rms x',y' vs z 
-  pzxprms(scale=1./mr,zscale=mm,titles=false)
-  pzyprms(scale=1./mr,zscale=mm,titles=false,color=red) 
-  ptitles("rms x' (black) and y' (red) vs z","z [mm]","rms x',y' [mr]",t_label)
-  fma() 
-  # (rms x)', (rms y)' vs z 
-  pzenvxp(scale=1./(2.*mr),zscale=mm,titles=false)
-  pzenvyp(scale=1./(2.*mr),zscale=mm,titles=false)
-  ptitles("Env Angles: (rms x)' (black) and (rms y)' (red) vs z",
-          "z [mm]","<xx'>/sqrt<xx>, <yy'>/sqrt(yy) [mr]",t_label)
-  fma()   
-  # normalized rms x-x' and y-y' emittances vs z 
-  pzepsnx(scale=1./4.,zscale=mm,titles=false) 
-  pzepsny(scale=1./4.,zscale=mm,titles=false,color=red)
-  ptitles("Normalized rms x-x' (black) and y-y' (red) Emittance vs z",
-          "z [mm]","Emittance [mm-mr]",t_label)
-  fma() 
-  # rms x-x' and y-y' emittances vs z 
-  pzepsx(scale=1./(4.*mm*mr),zscale=mm,titles=false) 
-  pzepsy(scale=1./(4.*mm*mr),zscale=mm,titles=false,color=red)
-  ptitles("rms x-x' (black) and y-y' (red) Emittance vs z",
-          "z [mm]","Emittance [mm-mr]",t_label)
-  fma() 
-  # normalized rms z-z' emittance vs z 
-  #    From check of code in getzmmnts routine in top.F
-  #    * [epsnz] = meters 
-  #    *  zc  = z - zbar 
-  #       vzc = vz - vzbar 
-  #       epsnz = 4.*sqrt( <zc**2><vzc**2> - <zc*vzc>**2 )/clight  
-  #
-  pzepsnz(scale=1./(4.*mm),zscale=mm,titles=false) 
-  ptitles("Normalized rms z-z' Emittance vs z",
-          "z [mm]","Emittance [mm-mr]",t_label)
-  fma() 
-  # Current vs z
-  pzcurr(scale=1./1.e-3,zscale=mm,titles=false)
-  ptitles("Electron Current vs z","z [mm]","I [mA]",t_label)
-  fma() 
-  # Line charge vs z   
-  pzlchg(scale=1./1.e-9,zscale=mm,titles=false) 
-  ptitles("Electron Line Charge vs z","z [mm]","Lambda [micro C/m]",t_label)
-  fma() 
 
-installafterstep(myplots) # install function myplots() to be called after each timestep
+installafterstep(diagnostics.callFunction) # install function myplots() to be called after each timestep
 
 # --- Turn on time histories of some z-momments (needed for plots) 
 top.lhxrmsz  = True
@@ -470,25 +365,10 @@ generate()
 #     so the particles will see the applied field from the plate biases.   
 #solver.ldosolve = False
 
-# Find indices of center coordinate of mesh for later diagnostic use 
-x_cen = 0. 
-y_cen = 0. 
-ix_cen = sum(where(w3d.xmesh <= x_cen,1,0))-1
-iy_cen = sum(where(w3d.ymesh <= y_cen,1,0))-1 
-
-
-# Make initial diagnostic plots of field (for simple check of fieldsolver)  
-
-# --- contour diode field 
-pcphizx(iy=iy_cen,xscale=1./mm,yscale=1./mm,
-  titlet="Initial (No Beam) ES Potenital Contours in y = 0 Plane",titleb="z [mm]",titlel="x [mm]") 
-fma() 
-
-# --- plot on axis potential 
-phiax = getphi(ix=ix_cen,iy=iy_cen)
-plg(phiax/kV,w3d.zmesh/mm) 
-ptitles("Initial (No Beam) On-Axis (x=y=0) ES Potential","z [mm]","Phi [kV]")
-fma() 
+# Find indices of center coordinate of mesh for diagnostic use 
+ix_cen = get_supremum_index(w3d,"x",0)
+iy_cen = get_supremum_index(w3d,"x",0)
+steves_initial_plots(ix_cen,iy_cen)
 
 #raise Exception("Code Stopped Here")  
 
