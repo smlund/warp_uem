@@ -4,6 +4,10 @@ def steves_plots(top):
   """
   Uses the global variable top to define
   a bunch of plots.
+  Args:
+    top: The top object from warp.
+  Return value:
+    None --- although plots are added to the .cgm file.
   """
   mr = 1.e-3 # milli-radian conversion scale 
   # time and position info to include on plot labels  

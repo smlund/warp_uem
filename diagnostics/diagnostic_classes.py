@@ -1,40 +1,42 @@
-class DiagnosticsBySteps():
+from fundamental_classes.user_event import UserEvent
+class DiagnosticsBySteps(UserEvent):
   """
   A class to provide the interface with the the diagnostics
-  set up in warp.
+  set up in warp so that the diagnositcs function runs
+  at the specified steps.  This is a little more 
+  transparent then using UserEvent.
   """
 
-  def __init__(self,top,steps,callback):
+  def __init__(self,callback,top,steps):
     """
     The init method captures what happens when instance = DiagnosticsBySteps()
-    is called.  Specifically, the steps at which the diagnostics
-    callback function and the callback itself are both set.
+    is called.  This passes the callback function and the 
+    arguments for this callback function, namely top
+    and steps, to the UserEvent.__init__ method.
     Args:
       self: The DiagnosticsBySteps object --- standard notation
         for object oriented python.
+      callback: The function to that will be called when
+        DiagnosticsBySteps.callFunction is called.
       top: The top object from warp
       steps:  A list of steps (iterations) at which the diagnostics
         will be launched (my be decorated to launch steps.)
-      callback: The function to that will be called when
-        DiagnosticsBySteps.callFunction is called.
     """
-    self.top = top
-    self.steps = steps
-    self.callback = callback
+    args = [top,steps]
+    UserEvent.__init__(callback,args)
 
   def callFunction(self,*args,**kwargs):
     """
     The method that is passed to the decorator,
-    e.g. installafterstep(self.callFunction) 
-    Decorated variables:
-      top: taken from the warp simulation setup
+    i.e. installafterstep(self.callFunction) 
+    This function adds the logic of checking the
+    current iteration against the steps at which we'd 
+    like to evaluate the callback function and passes
+    the appropriate arguments to the callback.
     Args:
       self: The DiagnosticsBySteps object --- standard notation
         for object oriented python.
-      *args: A pointer to a list of arguments to be passed to internal
-        functions.  Again, standard notation.
-     **kwargs: A pointer to a dict of argument ("key word arguments") to
-        be passed to internal functions.  Again, standard notation.
     """
-    if not(self.top.it in self.steps): return
-    self.callback(self.top,*args,**kwargs)
+    if not(self.args[0].it in self.args[1]): #self.args[0] = top, self.args[1] = steps
+      return #Only calls callback when current iteration is in the steps list.
+    UserEvent.callFunction()
