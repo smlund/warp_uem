@@ -1,5 +1,5 @@
 from fundamental_classes.frozen_class import PartiallyFrozenClass
-class UserEvent(FrozenClass):
+class UserEvent(PartiallyFrozenClass):
   """
   A class to provide the interface to allow passing
   arguments to functions that are called by warp's
@@ -30,7 +30,7 @@ class UserEvent(FrozenClass):
     self.args = args
     for key, value in additional_attributes.iteritems():
       setattr(self,key,value)
-    self._freeze()
+    self._partially_freeze()
 
   def callFunction(self):
     """
