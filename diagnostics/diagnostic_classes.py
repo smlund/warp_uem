@@ -1,9 +1,9 @@
 from fundamental_classes.user_event import UserEvent
-class DiagnosticsBySteps(UserEvent):
+class DiagnosticsByTimes(UserEvent):
   """
   A class to provide the interface with the the diagnostics
   set up in warp so that the diagnositcs function runs
-  at the specified steps.  This is a little more 
+  at the specified times.  This is a little more 
   transparent then using UserEvent.
   """
 
@@ -25,8 +25,8 @@ class DiagnosticsBySteps(UserEvent):
         provided time.
     """
     args = [top]
-    additional_attr = {"top": top, "times": times}
-    UserEvent.__init__(callback,args) #This partially freezes the attributes
+    additional_attr = {"top": top, "times": list(times)}
+    UserEvent.__init__(self,callback,args,additional_attr) #This partially freezes the attributes
 
   def callFunction(self,*args,**kwargs):
     """
@@ -44,9 +44,9 @@ class DiagnosticsBySteps(UserEvent):
       return
     #Call the function at the first time greater than or equal to
     #the desired time then remove that desired time from list.
-    if self.top.time >= self.times[0]): 
+    if self.top.time >= self.times[0]: 
       self.removeFirstTime()
-      UserEvent.callFunction(*args,**kwargs)
+      UserEvent.callFunction(self,*args,**kwargs)
     return
 
   def removeFirstTime(self):
@@ -79,8 +79,8 @@ class DiagnosticsBySteps(UserEvent):
         will be launched.
     """
     args = [top]
-    additional_attr = {"top": top, "steps": steps}
-    UserEvent.__init__(callback,args) #This partially freezes the attributes
+    additional_attr = {"top": top, "steps": list(steps)}
+    UserEvent.__init__(self,callback,args,additional_attr) #This partially freezes the attributes
 
   def callFunction(self,*args,**kwargs):
     """
@@ -96,4 +96,4 @@ class DiagnosticsBySteps(UserEvent):
     """
     if self.top.it not in self.steps:
       return #Only calls callback when current iteration is in the steps list.
-    UserEvent.callFunction(*args,**kwargs)
+    UserEvent.callFunction(self,*args,**kwargs)

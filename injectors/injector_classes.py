@@ -1,4 +1,5 @@
 from fundamental_classes.user_event import UserEvent
+from warp import * #Need for species
 class ElectronInjector(UserEvent):
   """
   A class to provide the interface with the the injector
@@ -28,6 +29,7 @@ class ElectronInjector(UserEvent):
     self.callback = callback
      
     electrons = Species(type=Electron,weight=weight,name="Electron")
-    self.args=[top, phase_volume, electrons, flags]
+    args=[top, phase_volume, electrons, flags]
+    UserEvent.__init__(self,callback,args) #This partially freezes the attributes
 
   #def callFunction(self): This method is inherited from UserEvent

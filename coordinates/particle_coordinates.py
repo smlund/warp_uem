@@ -185,7 +185,7 @@ class ParticlePhaseCoordinates():
     """
     if hasattr(self,fieldname): #Standard attributes.
       value = getattr(self,fieldname)
-      if not isinstance(value,Carteisan3DVector):
+      if not isinstance(value,Cartesian3DVector):
         return value
     if fieldname == "E": #Interprets E as energy
       return self.getEnergy()
@@ -194,7 +194,7 @@ class ParticlePhaseCoordinates():
     if fieldname.startswith("p") and momentum_direction in ["x","y","z"]:
       return getattr(self.p,momentum_direction)
     if fieldname.startswith("v") and velocity_direction in ["x","y","z"]:
-      return getattr(self.v,veloctiy_direction)
+      return getattr(self.v,velocity_direction)
     elif fieldname in ["x","y","z"]:
       return getattr(self.x,fieldname)
     raise Exception("The given field, "+fieldname+", is not defined for the particle.")
@@ -238,7 +238,7 @@ class TimedParticlePhaseCoordinates(ParticlePhaseCoordinates):
     Returns a new particle with the translated position.
     """
     if isinstance(translation_vector,Cartesian3DVector):
-      new_particle = self.__class__(self.mass,self.time,self.x-translation_vector,self.p)
+      new_particle = self.__class__(self.mass,self.time,x=self.x-translation_vector,p=self.p)
       return new_particle
     raise CoordinateException("Translating a particle with the incorrect translation vector type.")
 

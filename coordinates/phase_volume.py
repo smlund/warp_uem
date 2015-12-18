@@ -138,13 +138,13 @@ class Phase6DVolume():
       output.append(particle.getValueFromFieldname(fieldname))
     return output
 
-class TimedPhase6DVolume(Phase6dVolume):
+class TimedPhase6DVolume(Phase6DVolume):
   """
   A class to provide the functions we'd like for the timed particles.
   """
 
   def __init__(self,particle_type=TimedParticlePhaseCoordinates):
-    Phase6DCoordinates.__init__(self,particle_type)
+    Phase6DVolume.__init__(self,particle_type)
 
   def getTimeSlice(self,min_time,max_time):
     """
@@ -163,13 +163,13 @@ class TimedPhase6DVolume(Phase6dVolume):
     """
     data_dict = pickle.load( open( filepath, "r" ) )
     for row in data_dict:
-      position = Cartesian3DVector(row["x"]/position_conversion,
-                                   row["y"]/position_conversion,
-                                   row["z"]/position_conversion)
-      momentum = Cartesian3DVector(row["px"]/momentum_conversion,
-                                   row["py"]/momentum_conversion,
-                                   row["pz"]/momentum_conversion)
-      self.addParticle(mass,row["time"],x=position,p=momentum)
+      position = Cartesian3DVector(row["x"]*position_conversion,
+                                   row["y"]*position_conversion,
+                                   row["z"]*position_conversion)
+      momentum = Cartesian3DVector(row["px"]*momentum_conversion,
+                                   row["py"]*momentum_conversion,
+                                   row["pz"]*momentum_conversion)
+      self.addParticle(mass,row["t"],x=position,p=momentum)
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Test functions in this package and use simple commands to get some of the straightforward methods.')
@@ -179,7 +179,7 @@ if __name__ == "__main__":
   parser.add_argument('-e','--emittances', dest="emittances", action="store_true", help='Prints out the emittances for the phase volume.', default=False)
   parser.add_argument('--mixed_matrix', dest="mixed_matrix", action="store_true", help='Prints out the upper triangular form of the correlation matrix with variance along diagonal.', default=False)
   parser.add_argument('--sub_determinant', dest="sub_determinant", action="store_true", help='Prints the determinant of the phase space portion of the covariance matrix.', default=False)
-  parser.add_argument('-m','--number_of_electron_per_macroparticle', dest="number_of_electrons_per_macroparticle", type=int, help='The number of electrons per macroparticle for the simulation.  This defaults to 100 unless specified.', default=100)
+  parser.add_argument('-m','--number_of_electrons_per_macroparticle', dest="number_of_electrons_per_macroparticle", type=int, help='The number of electrons per macroparticle for the simulation.  This defaults to 100 unless specified.', default=100)
   args = parser.parse_args()
 
   mass_of_electron = constants.physical_constants["electron mass energy equivalent in MeV"][0]

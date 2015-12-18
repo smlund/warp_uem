@@ -1,4 +1,4 @@
-from coordinate import Cartesian3DVector
+from coordinates.coordinate_vector_3d import Cartesian3DVector
 from warp import *
 
 def steves_injectelectrons(top, phase_volume, electrons, flags={}):
@@ -28,7 +28,7 @@ def steves_injectelectrons(top, phase_volume, electrons, flags={}):
   # Find macroparticles  between t and t + dt to inject 
   phase_volume_to_inject = phase_volume.getTimeSlice(top.time, top.time + top.dt)
   # add small number to insure z coordinate just to right of conductor 
-  phase_volume_to_inject = phase_volume_to_inject.translate(Cartesian3DVectory(0,0,top.smallpops)
+  phase_volume_to_inject = phase_volume_to_inject.translate(Cartesian3DVector(0,0,top.smallpos))
 
   # Adjust particle coordinates (Nonrelativistic formulas) to inject 
   if "advance_position" in flags:
@@ -57,10 +57,10 @@ def steves_injectelectrons(top, phase_volume, electrons, flags={}):
     ginj.append(particle.calcLorentzGammaFromVelocity("z"))
   ginj = array(ginj)
   
-  electrons.addparticles(x=xinj,y=yinj,z=zinj,vx=vxinj,vy=vyinj,vz=vzinj,gi=ginj))
+  electrons.addparticles(x=xinj,y=yinj,z=zinj,vx=vxinj,vy=vyinj,vz=vzinj,gi=ginj)
 
 
-def advance_position_over_remaining_time(phase_volume,goal_time)
+def advance_position_over_remaining_time(phase_volume,goal_time):
   """
   Advances the particle from its attribute time to the goal time
   assuming 0 acceleration.
@@ -76,7 +76,7 @@ def advance_position_over_remaining_time(phase_volume,goal_time)
     time = particle.getValueFromFieldname("time")
     particle.advancePosition(goal_time - time)
 
-def advance_velocity_over_remaining_time(phase_volume,goal_time)
+def advance_velocity_over_remaining_time(phase_volume,goal_time):
   """
   Advances the particle from its attribute time to the goal time
   assuming.
