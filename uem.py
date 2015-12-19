@@ -74,6 +74,7 @@ print "\t" + "\n\t".join([k + " = " + str(v) for k, v in vars(args).iteritems()]
 
 from config.my_config import MyConfigParser, parse_key_as_numpy_array
 from config.simulation_type import get_mesh_symmetry_factor, get_solver
+from config.elements import load_elements
 from diagnostics.diagnostic_classes import DiagnosticsByTimes
 from diagnostics.steves_uem_diagnostics import steves_plots, steves_initial_plots
 from discrete_fourspace.mesh import get_supremum_index
@@ -158,11 +159,7 @@ registersolver(solver)
 #     * Assume potential 0 (ground) at physical anode at z = d_plates to 
 #       specify reference potential   
 #
-d_plates  = 5.*mm    # Plate seperation [m]
-r_plate   = 1.0      # Radius plate (take large) [m]
-t_plate   = 1.*mm    # Thickness plate (take large) [m] 
-
-
+conductor_elements = load_elements(config,"Conductor elements")
 
 # --- specify conducting plates to place on mesh 
 #     * plate_cathode => emitter plate at z = 0  
@@ -170,17 +167,11 @@ t_plate   = 1.*mm    # Thickness plate (take large) [m]
 #                        at bias needed to achieve specified diode gradient 
 #     * plates will be loaded after field solver employed is registered (necessary) 
 
-v_cathode = -grad*d_plates                # Cathode bias [V]
-v_anode   = -grad*(d_plates-(zmax-zmin))  # Anode   bias [V] 
+conductor_elements.cathode.voltage = -grad*conductor_elements.cathode.voltage  # Cathode bias [V]
+conductor_elements.anode.voltage = -grad*conductor_elements.anode.voltage  # Cathode bias [V]
 
-plate_cathode = ZCylinder(r_plate,t_plate,zcent=zmin-t_plate/2.,voltage=v_cathode) 
-plate_anode   = ZCylinder(r_plate,t_plate,zcent=zmax+t_plate/2.,voltage=v_anode  ) 
-#cathode.voltage = -grad*cathode.voltage                # Cathode bias [V]
-#anode.voltage   = -grad*anode.voltage  # Anode   bias [V] 
-
-plates = plate_cathode + plate_anode 
-installconductor(plates)  # install conductors after field solver registered
-
+for conductor_element in conductor_elements:
+   installconductor(conductor_element)  # install conductors after field solver registered
 
 # Create the electron beam species 
 convert = jperev*1.*MV/clight #Input is in MeV/c and we want si units.
