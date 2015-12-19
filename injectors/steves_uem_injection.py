@@ -1,8 +1,11 @@
 from coordinates.coordinate_vector_3d import Cartesian3DVector
 from warp import *
 
-def steves_injectelectrons(top, phase_volume, electrons, flags={}):
+def steves_injectelectrons(top, t_inj, x_inj, y_inj, z_inj, px_inj, py_inj, pz_inj, charg_mass_ratio,
+            electrons, flags={}):
   """
+  I tried my own approach, but it was signifcantly slower and broken to boot (I see why, but I didn't
+  fix it).  Returned to Steve's original code.
   Function to inject electrons macroparticles each time step.
     * Present version assumes nonrelativisit dynamics for all injected electrons.  After injection, 
       electrons can be advanced relativisitically or not depending on setting of top.lrelativ .  
@@ -16,85 +19,79 @@ def steves_injectelectrons(top, phase_volume, electrons, flags={}):
       simulation is electromagnetic.
     Args:
       top: The top object from warp.
-      phase_volume: A timed phase volume object containing the injection time 
-        and the x, y, z an px, py, pz coordinates of the N particles.  A phase
-        volume can be found in my coordinates package.
+      (t,x,y,z,px,py,pz)_inj: Numpy arrays with the time and phase coordinates of the particles.
+      charge_mass_ratio: e/m_e
       electrons: A container holding the elctrons.
       flags: A dictionary of true/false flags.
     Return value:
       None --- although the electrons container is modified in place.
   """
-
-  # Find macroparticles  between t and t + dt to inject 
-  phase_volume_to_inject = phase_volume.getTimeSlice(top.time, top.time + top.dt)
-  # add small number to insure z coordinate just to right of conductor 
-  phase_volume_to_inject = phase_volume_to_inject.translate(Cartesian3DVector(0,0,top.smallpos))
-
+  # Find indices of injected electron macroparticle arrays between t and t + dt to inject 
+  indices = where(logical_and(top.time < t_inj, t_inj <= top.time + top.dt))[0] 
+  ninj = len(indices)
+  # Extract macroparticle coordinates t, x,p to inject
+  tinj = t_inj[indices] 
+  xinj = x_inj[indices]
+  yinj = y_inj[indices] 
+  zinj = z_inj[indices] + smallpos  # add small no to insure z coordinate just to right of conductor  
+  pxinj = px_inj[indices]
+  pyinj = py_inj[indices]
+  pzinj = pz_inj[indices]
+  # Calculate macro particle velocities and inverse gamma factors to inject
+  #ginj  = sqrt(1. + (pxinj**2 + pyinj**2 + pzinj**2)/(emass*clight)**2 )
+  #giinj = 1./ginj
+  giinj = ones(ninj)     # inverse gamma = 1., NR limit 
+  vxinj = giinj*pxinj/top.emass 
+  vyinj = giinj*pyinj/top.emass 
+  vzinj = giinj*pzinj/top.emass 
   # Adjust particle coordinates (Nonrelativistic formulas) to inject 
   if "advance_position" in flags:
     if flags["advance_position"]:
-      advance_position_over_remaining_time(phase_volume_to_inject,top.time+top.dt)
- 
-  #Get the position in the form necessary for warp, i.e. numpy.array.
-  xinj = array(phase_volume_to_inject.getListFromFieldname("x"))
-  yinj = array(phase_volume_to_inject.getListFromFieldname("y"))
-  zinj = array(phase_volume_to_inject.getListFromFieldname("z"))
-
-  # velocity correction using both E- and B-fields: B-field only 
-  #   nonzero for EM fieldsolve 
+      xinj,yinj,zinj = advance_position_over_remaining_time(top.time+top.dt,tinj,xinj,yinj,zinj,
+                         vxinj,vyinj,vzinj)
   if "advance_velocity" in flags:
     if flags["advance_velocity"]:
-      advance_position_over_remaining_time(phase_volume_to_inject,top.time+top.dt)
+      vxinj,vyinj,vzinj = advance_position_over_remaining_time(top.time+top.dt,vxinj,vyinj,vzinj)
 
-  #Get the velocity in the form necessary for warp, i.e. numpy.array.
-  vxinj = array(phase_volume_to_inject.getListFromFieldname("vx"))
-  vyinj = array(phase_volume_to_inject.getListFromFieldname("vy"))
-  vzinj = array(phase_volume_to_inject.getListFromFieldname("vz"))
-  
-  #Get gammas:
-  ginj = []
-  for particle in phase_volume_to_inject:
-    ginj.append(particle.calcLorentzGammaFromVelocity("z"))
-  ginj = array(ginj)
-  
-  electrons.addparticles(x=xinj,y=yinj,z=zinj,vx=vxinj,vy=vyinj,vz=vzinj,gi=ginj)
+  # Inject electron macroparticles 
+  electrons.addparticles(x=xinj,y=yinj,z=zinj,vx=vxinj,vy=vyinj,vz=vzinj,gi=giinj)
 
 
-def advance_position_over_remaining_time(phase_volume,goal_time):
+def advance_position_over_remaining_time(goal_time,tinj,xinj,yinj,zinj,vxinj,vyinj,vzinj):
   """
   Advances the particle from its attribute time to the goal time
   assuming 0 acceleration.
     Args:
-      phase_volume: A timed phase volume object containing the injection time 
-        and the x, y, z an px, py, pz coordinates of the N particles.  A phase
-        volume can be found in my coordinates package.
       goal_time: The time to which we want our particle to progress.
+      (t,x,y,z,vx,vy,vz)_inj: Numpy arrays with the time, position 
+        and velocity coordinates of the particles.
     Return value:
-      None --- although the particles objects are modified in place.
+      (x,y,z)_inj: Numpy arrays with position coordinates of the particles.
   """
-  for particle in phase_volume:
-    time = particle.getValueFromFieldname("time")
-    particle.advancePosition(goal_time - time)
+  dt = goal_time - tinj
+  # coordinate correction 
+  xinj += vxinj*dt 
+  yinj += vyinj*dt 
+  zinj += vzinj*dt 
+  return (xinj,yinj,zinj)
 
-def advance_velocity_over_remaining_time(phase_volume,goal_time):
+def advance_velocity_over_remaining_time(goal_time,tinj,xinj,yinj,zinj,vxinj,vyinj,vzinj,charge_mass_ratio):
   """
-  Advances the particle from its attribute time to the goal time
-  assuming.
+  Advances the particle from its attribute time to the goal time.
+  velocity correction using both E- and B-fields: B-field only 
+  nonzero for EM fieldsolve 
     Args:
-      phase_volume: A timed phase volume object containing the injection time 
-        and the x, y, z an px, py, pz coordinates of the N particles.  A phase
-        volume can be found in my coordinates package.
       goal_time: The time to which we want our particle to progress.
+      (t,x,y,z,vx,vy,vz)_inj: Numpy arrays with the time, position 
+        and velocity coordinates of the particles.
     Return value:
-      None --- although the particle objects are modified in place.
+      (vx,vy,vz)_inj: Numpy arrays with velocity coordinates of the particles.
   """
   ex = zeros(ninj); ey = zeros(ninj); ez = zeros(ninj) 
   bx = zeros(ninj); by = zeros(ninj); bz = zeros(ninj)
   fetche3dfrompositions(electrons.sid,1,len(phase_volume_to_inject),xinj,yinj,zinj,ex,ey,ez,bx,by,bz)
-  for i in range(len(phase_volume)):
-    particle = phase_volume_to_inject.particles[i]
-    time = particle.getValueFromFieldname("time")
-    evector = Cartesian3DVector(ex,ey,ez)
-    bvector = Cartesian3DVector(ex,ey,ez)
-    acceleration = -(top.echarge/particle.mass)*(evector + particle.getVelocity().__cross_product__(bvector))
-    particle.advanceVelocity(goal_time - time,acceleration)
+  vxinj += -charge_mass_ratio*ex*dt - charge_mass_ratio*(vyinj*bz-vzinj*by)*dt  
+  vyinj += -charge_mass_ratio*ey*dt - charge_mass_ratio*(vzinj*bx-vxinj*bz)*dt 
+  vzinj += -charge_mass_ratio*ez*dt - charge_mass_ratio*(vxinj*by-vzinj*bx)*dt 
+  return (vxinj,vyinj,vzinj)
+  

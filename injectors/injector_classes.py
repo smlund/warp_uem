@@ -7,7 +7,8 @@ class ElectronInjector(UserEvent):
   transparent then using UserEvent by itself.
   """
 
-  def __init__(self,callback,top,phase_volume,weight,flags={}):
+  def __init__(self,callback,top,t,x,y,z,px,py,pz,
+               chage_mass_ratio,weight,flags={}):
     """
     The init method captures what happens when instance = ElectronInjector()
     is called.  This passes the callback function and the 
@@ -27,9 +28,8 @@ class ElectronInjector(UserEvent):
         the callback function.  This is meant to hold True/False flags.
     """
     self.callback = callback
-     
     electrons = Species(type=Electron,weight=weight,name="Electron")
-    args=[top, phase_volume, electrons, flags]
+    args=[top, t, x, y, z, px, py, pz, chage_mass_ratio, electrons, flags]
     UserEvent.__init__(self,callback,args) #This partially freezes the attributes
 
   #def callFunction(self): This method is inherited from UserEvent

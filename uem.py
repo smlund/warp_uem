@@ -78,7 +78,7 @@ from config.elements import load_elements
 from diagnostics.diagnostic_classes import DiagnosticsByTimes
 from diagnostics.steves_uem_diagnostics import steves_plots, steves_initial_plots
 from discrete_fourspace.mesh import get_supremum_index
-from coordinates.phase_volume import TimedPhase6DVolume
+from injectors.io import phase_volume_pickle_loader
 from injectors.injector_classes import ElectronInjector
 from injectors.steves_uem_injection import steves_injectelectrons
 from class_and_config_conversion import set_attributes_with_config_section
@@ -174,12 +174,11 @@ for conductor_element in conductor_elements:
    installconductor(conductor_element)  # install conductors after field solver registered
 
 # Create the electron beam species 
-convert = jperev*1.*MV/clight #Input is in MeV/c and we want si units.
-phase_volume = TimedPhase6DVolume()
-phase_volume.injectPickleDict(args.input_file, mass=top.emass, 
-                              momentum_conversion=convert/args.electrons_per_macroparticle)
-electron_injector = ElectronInjector(steves_injectelectrons,top, phase_volume, 
-                      args.electrons_per_macroparticle, 
+momentum_unit_conversion = jperev*1.*MV/clight #Input is in MeV/c and we want si units.
+(t,x,y,z,px,py,pz) = phase_volume_pickle_loader(args.input_file,
+       momentum_conversion=momentum_unit_conversion/args.electrons_per_macroparticle)
+electron_injector = ElectronInjector(steves_injectelectrons,top, t, x, y, z, px, py, pz,
+                      top.echarge/top.emass, args.electrons_per_macroparticle, 
                       flags={"adjust_position": args.adjust_position,
                              "adjust_velocity": args.adjust_velocity})
 installuserinjection(electron_injector.callFunction)  # install injection function in timestep 
