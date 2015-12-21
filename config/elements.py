@@ -74,6 +74,46 @@ class Elements(object):
     """
     return element in self.container.values()
 
+  def getMaxAttr(self,attr):
+    """
+    Returns the max value of the provided attribute (assuming
+    the attr is a real or integer) across all elements.
+    Args:
+      self:  Standard python object notation for the instance.
+      attr:  Attribute name for which the max will be found.
+    Return value:
+      Max of all of the elements attributes.
+    """
+    value = None
+    for element in self:
+      current_value = getattr(self,attr)
+      try:
+        if value < current_value:
+          value = current_value
+      except TypeError:
+        value = current_value
+    return value
+
+  def getMinAttr(self,attr):
+    """
+    Returns the min value of the provided attribute (assuming
+    the attr is a real or integer) across all elements.
+    Args:
+      self:  Standard python object notation for the instance.
+      attr:  Attribute name for which the max will be found.
+    Return value:
+      Min of all of the elements attributes.
+    """
+    value = None
+    for element in self:
+      current_value = getattr(self,attr)
+      try:
+        if value > current_value:
+          value = current_value
+      except TypeError:
+        value = current_value
+    return value
+
 def load_elements(config,section_name):
   """
   Loads up all of the classes from config object 
