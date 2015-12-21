@@ -1,4 +1,5 @@
 from fundamental_classes.user_event import UserEvent
+from injectors.io import phase_volume_pickle_loader
 from warp import * #Need for species
 class ElectronInjector(UserEvent):
   """
@@ -7,8 +8,8 @@ class ElectronInjector(UserEvent):
   transparent then using UserEvent by itself.
   """
 
-  def __init__(self,callback,top,t,x,y,z,px,py,pz,
-               chage_mass_ratio,weight,flags={}):
+  def __init__(self, callback, top, filepath,
+               chage_mass_ratio, weight, flags={},**kwargs):
     """
     The init method captures what happens when instance = ElectronInjector()
     is called.  This passes the callback function and the 
@@ -28,6 +29,7 @@ class ElectronInjector(UserEvent):
         the callback function.  This is meant to hold True/False flags.
     """
     self.callback = callback
+    t, x, y, z, px, py, pz = phase_volume_pickle_loader(filepath,**kwargs)
     electrons = Species(type=Electron,weight=weight,name="Electron")
     args=[top, t, x, y, z, px, py, pz, chage_mass_ratio, electrons, flags]
     UserEvent.__init__(self,callback,args) #This partially freezes the attributes

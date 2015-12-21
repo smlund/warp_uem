@@ -2,7 +2,7 @@ import numpy
 import cPickle as pickle
 
 def phase_volume_pickle_loader(pickle_dict_file,time_conversion=1.,
-          position_conversion=1.,momentum_conversion=1.):
+          position_conversion=1.,momentum_conversion=1.,**kwargs):
   """
   Read in the initial conditions data that is stored in a pickled
   dict.
