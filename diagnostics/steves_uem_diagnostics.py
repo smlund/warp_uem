@@ -111,7 +111,7 @@ def steves_plots(top):
   ptitles("Electron Line Charge vs z","z [mm]","Lambda [micro C/m]",t_label)
   fma() 
 
-def steves_initial_plots(ix, iy):
+def electric_potential_plots(ix, iy):
   """
   Make initial diagnostic plots of field (for simple check of fieldsolver)  
   Args:

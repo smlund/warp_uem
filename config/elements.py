@@ -129,7 +129,11 @@ def load_elements(config,section_name):
   elements=Elements()
   for option in config.options(section_name):
     elements_file = config.get(section_name,option)
-    loaded_elements = import_classes_from_config_file(elements_file,config_parser_class=MyConfigParser)
+    try:
+      loaded_elements = import_classes_from_config_file(elements_file, config_parser_class=MyConfigParser, 
+                          key_overwrite=option)
+    except KeyError:
+      loaded_elements = import_classes_from_config_file(elements_file, config_parser_class=MyConfigParser)
     for k, v in loaded_elements.iteritems():  
       elements.addElement(k,v)
   return elements
