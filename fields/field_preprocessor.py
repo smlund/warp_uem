@@ -215,26 +215,28 @@ class FieldPreProcessor(object):
       None --- but writes to the two input files.
     """
     
+    pickle_filepath = {}
     for field_type, field in self.fields.iteritems():
       if pickle_file_front is None:
         pickle_file_front, file_extension = os.path.splitext(self.filepath)
-      pickle_filepath = pickle_file_front + "_" + field_type + ".pckl"
-      pickle.dump(field,open(pickle_filepath,"wb"))
+      pickle_filepath[field_type] = pickle_file_front + "_" + field_type + ".pckl"
+      pickle.dump(field,open(pickle_filepath[field_type],"wb"))
 
-      if config_file_front is None:
-        config_file_front, file_extension = os.path.splitext(self.filepath)
-      config_filepath = config_file_front + ".cfg"
-      config = ConfigParser()
-      section = field_type + " field parameters"
-      config.add_section(section)
-      config.set(section,"pickled_field", pickle_filepath)
-      config.set(section,"zmin", str(self.zmin))
-      config.set(section,"zmax", str(self.zmax))
-      config.set(section,"zlen", str(self.zlen))
-      for coordinate in self.coordinates.keys():
-        config.set(section, "n"+coordinate, str(int(self.number_of_steps[coordinate])))
-        config.set(section, "d"+coordinate, str(self.stepsize[coordinate]))
-      config.write(open(config_filepath,'w'))
+    section = "field parameters"
+    if config_file_front is None:
+      config_file_front, file_extension = os.path.splitext(self.filepath)
+    config_filepath = config_file_front + ".cfg"
+    config = ConfigParser()
+    config.add_section(section)
+    for field_type, filepath in pickle_filepath.iteritems():
+      config.set(section,field_type+"_pickled_field", filepath)
+    config.set(section,"zmin", str(self.zmin))
+    config.set(section,"zmax", str(self.zmax))
+    config.set(section,"zlen", str(self.zlen))
+    for coordinate in self.coordinates.keys():
+      config.set(section, "n"+coordinate, str(int(self.number_of_steps[coordinate])))
+      config.set(section, "d"+coordinate, str(self.stepsize[coordinate]))
+    config.write(open(config_filepath,'w'))
 
   def isRZ(self):
     """
