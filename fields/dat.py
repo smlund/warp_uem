@@ -11,9 +11,7 @@ def read_dat_file_as_numpy_arrays(dat_file):
     dat_file: File with the .dat extension taken from the output
       of Poisson (I think)
   Return value:
-    output: Dictionary with the keys metadata and data.
-      metadata: Additional data stored in the first couple
-        lines of the dat file (e.g. ZMin)
+    output: Dictionary with the keys
       fieldnames: The keys of the dictionary in the order they
         appear in the file.
       data: A dictionary of numpy arrays keyed by the fieldnames.
@@ -25,35 +23,31 @@ def read_dat_file_as_numpy_arrays(dat_file):
 def read_dat_file(dat_file):
   """
   Reads a dat field file (as given to me by Chung-Yu Ruan)
-  returning an object with elements data and metadata.  The
+  returning an object with elements data.  The
   data will be returned a list of dicts with the header
   fieldnames as keys.  All fieldnames will be in lower case only.
   Args:
     dat_file: File with the .dat extension taken from the output
       of Poisson (I think)
   Return value:
-    output: Dictionary with the keys metadata and data.
-      metadata: Additional data stored in the first couple
-        lines of the dat file (e.g. ZMin)
+    output: Dictionary with the keys
       fieldnames: The keys of the dictionary in the order they
         appear in the file.
       data: A table (rows of dicts) keyed by whatever is in
         the header.
   """
   output = {}
-  #Get header and meta data and check consistency.
   with open(dat_file,"r") as f:
-    line = f.readline() #Skip first line
-    output["metadata"] = {} #Adds metadata taken from line.
-    for i in range(3):
-      line = f.readline().strip()
-      metadata = get_metadata_from_dat_line(line)
-      output["metadata"].update(metadata) #Adds metadata taken from line.
+    for i in range(4): #Skip first 4 lines
+      line = f.readline()
+    #Get fieldnames (keys from header)
     output["fieldnames"] = f.readline().strip().lower().split()
+    #Skip next line and check to make sure it has correct format.
     line = f.readline().strip()
     if not line.startswith("==="):
       raise Exception("Check format of " + dat_file + "." +
         "It appears as if the sixth line is not \"===...\".")
+    #Load data as floats.
     table = []
     for line in f:
       line = line.strip()
@@ -66,6 +60,8 @@ def read_dat_file(dat_file):
     
 def get_metadata_from_dat_line(line):
   """
+  I'm not using the metadata anymore.  I'm just deriving it since
+  I found errors in the file I had.
   Extract the metadata that is stored in a line from the header 
   of a dat file.
   Args:

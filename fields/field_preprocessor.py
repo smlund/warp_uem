@@ -37,7 +37,7 @@ class FieldPreProcessor(object):
     self.input_order = file_content["fieldnames"]
 
     self.parseData(file_content["data"])
-    self.fillDerivedData(file_content["metadata"])
+    self.fillDerivedData()
     self.correctZCoordinate()
     self.ravel()
 
@@ -75,14 +75,11 @@ class FieldPreProcessor(object):
           self.fields["magnetic"] = {}
           self.fields["magnetic"][direction] = np_array
     
-  def fillDerivedData(self, data):
+  def fillDerivedData(self):
     """
-    First check the meta data from the read file, and if not present,
-    derive the necessary data.
+    Derive the necessary attributes from the input data.
     Args:
       self: Standard python object oriented notation. 
-      data: A dictionary containing values passed as meta data
-        from the read filepath.
     Return value:
       None --- but adds values to stepsize, number_of_steps,
         zmin, zmax, and zlen.
@@ -92,30 +89,18 @@ class FieldPreProcessor(object):
     if not hasattr(self,"number_of_steps"):
       self.number_of_steps = {}
 
-    try:
-      self.zmin = data["zmin"]
-    except KeyError:
-      self.zmin = self.coordinates["z"].min()
-    try:
-      self.zmax = data["zmax"]
-    except KeyError:
-      self.zmax = self.coordinates["z"].max()
+    self.zmin = self.coordinates["z"].min()
+    self.zmax = self.coordinates["z"].max()
     self.zlen = self.zmax - self.zmin
     for key, np_array in self.coordinates.iteritems():
-      try:
-        self.stepsize[key] = data["d"+key]
-      except KeyError:
-        self.stepsize[key] = np.average(np.diff(np.unique(np_array)))
-      try:
-        self.number_of_steps[key] = data["n"+key]
-      except KeyError:
-        self.number_of_steps[key] = np.around( ( np_array.max()-np_array.min() )/self.stepsize[key] )
+      self.stepsize[key] = np.average(np.diff(np.unique(np_array)))
+      self.number_of_steps[key] = np.around( ( np_array.max()-np_array.min() )/self.stepsize[key] )
     return
     
   def correctZCoordinate(self):
     """
-    Moves the z coordinate to 0 and stores the zmin and zmax values
-    (if not already present) in the metadata.
+    Moves the z coordinate to 0 which is necessary
+    for warp.
     Args:
       self: Standard python object oriented notation. 
     Return value:
@@ -278,8 +263,6 @@ def read_file_as_dict_of_numpy_arrays(filepath,formattype=""):
       the file extension to determine the file loader.
   Return value:
     A dictionary of data from the file.
-      metadata: Additional data stored in the first couple
-        lines of the dat file (e.g. ZMin)
       fieldnames: The keys of the dictionary in the order they
         appear in the file.
       data: A dictionary of numpy arrays keyed by the fieldnames.
