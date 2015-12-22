@@ -200,7 +200,7 @@ class FieldPreProcessor(object):
       self.fields[field_type]["r"] = fr
       self.fields[field_type]["z"] = fz
 
-  def archive(self, pickle_file_front=None, config=None, config_file_front=None):
+  def archive(self, pickle_file_front=None, config=None, config_file_front=None, section=None):
     """
     Saves the fields to pickle file(s) and the relevant
     other attributes to a config file.
@@ -226,8 +226,9 @@ class FieldPreProcessor(object):
         pickle_file_front, file_extension = os.path.splitext(self.filepath)
       pickle_filepath[field_type] = pickle_file_front + "_" + field_type + ".pckl"
       pickle.dump(field,open(pickle_filepath[field_type],"wb"))
-
-    section = "field parameters"
+ 
+    if section = None:
+      section = "field parameters"
     config_write = False
     if config is None:
       config = ConfigParser()
