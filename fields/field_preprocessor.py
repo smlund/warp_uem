@@ -200,7 +200,7 @@ class FieldPreProcessor(object):
       self.fields[field_type]["r"] = fr
       self.fields[field_type]["z"] = fz
 
-  def archive(self, pickle_file_front=None, config_file_front=None):
+  def archive(self, pickle_file_front=None, config=None, config_file_front=None):
     """
     Saves the fields to pickle file(s) and the relevant
     other attributes to a config file.
@@ -209,10 +209,15 @@ class FieldPreProcessor(object):
       pickle_file: Path to where the pickle file(s) will be written
         with the additional _electric or _magnetic.
         Default is to the original filepath without its extension.
+      config: A config parser object.  If this is not defined, then one
+        will be created.
       config_file_front:  Path to where the config file will be written.
-        Default is to the original filepath without its extension.
+        Default is to the original filepath without its extension.  If
+        this is not provided, the config is written only if the config object
+        is NOT provided.
     Return value:
-      None --- but writes to the two input files.
+      config: The config parser object --- but writes to the field files
+        no matter what.
     """
     
     pickle_filepath = {}
@@ -223,10 +228,10 @@ class FieldPreProcessor(object):
       pickle.dump(field,open(pickle_filepath[field_type],"wb"))
 
     section = "field parameters"
-    if config_file_front is None:
-      config_file_front, file_extension = os.path.splitext(self.filepath)
-    config_filepath = config_file_front + ".cfg"
-    config = ConfigParser()
+    config_write = False
+    if config is None:
+      config = ConfigParser()
+      config_write = True
     config.add_section(section)
     for field_type, filepath in pickle_filepath.iteritems():
       config.set(section,field_type+"_pickled_field", filepath)
@@ -236,7 +241,15 @@ class FieldPreProcessor(object):
     for coordinate in self.coordinates.keys():
       config.set(section, "n"+coordinate, str(int(self.number_of_steps[coordinate])))
       config.set(section, "d"+coordinate, str(self.stepsize[coordinate]))
-    config.write(open(config_filepath,'w'))
+    if config_file_front is None:
+      config_file_front, file_extension = os.path.splitext(self.filepath)
+      config_filepath = config_file_front + ".cfg"
+    else:
+      config_filepath = config_file_front + ".cfg"
+      config_write = True
+    if config_write:
+      config.write(open(config_filepath,'w'))
+    return config
 
   def isRZ(self):
     """
