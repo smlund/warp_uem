@@ -28,4 +28,5 @@ def get_index_of_point(numpy_array,stepsize):
   Return value:
     numpy_indices: A numpy array with the indices.
   """
-  return nint( ( numpy_array-numpy_array.min() )/stepsize ) 
+  output = around( ( numpy_array-numpy_array.min() )/stepsize ) 
+  return [int(o) for o in output]
