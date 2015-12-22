@@ -76,7 +76,7 @@ from config.my_config import MyConfigParser, parse_key_as_numpy_array
 from config.simulation_type import get_mesh_symmetry_factor, get_solver
 from config.elements import load_elements
 from diagnostics.diagnostic_classes import DiagnosticsByTimes
-from diagnostics.steves_uem_diagnostics import steves_plots, steves_initial_plots
+from diagnostics.steves_uem_diagnostics import steves_plots, electric_potential_plots
 from discrete_fourspace.mesh import get_supremum_index
 from injectors.injector_classes import ElectronInjector
 from injectors.steves_uem_injection import steves_injectelectrons
@@ -205,7 +205,7 @@ if args.field_solver_off:
 # Generate initial plots
 ix_cen = get_supremum_index(w3d,"x",0)
 iy_cen = get_supremum_index(w3d,"y",0)
-steves_initial_plots(ix_cen,iy_cen)
+electric_potential_plots(ix_cen,iy_cen)
 
 # Advance simulation through each step interval set  
 for ii in range(len(adv_steps)):
@@ -216,9 +216,17 @@ for ii in range(len(adv_steps)):
 
 #Apply statistics to grid and make grid move (set top.vbeamfrm to average velocity)
 
-#Add fields and second edit top with configuration file.
+#Add b_fields and second edit top with configuration file.
 
-# Advance simulation through each step interval set  
+# Advance simulation through each step interval set  until I don't know, 10mm past anode
+
+#Re-get statistic for beam
+
+#Apply statistics to grid and make grid move (set top.vbeamfrm to average velocity)
+
+#Apply statistics to sin function so that average particle enters a sin phi = 0.
+
+# Advance simulation through elements and RF cavity
 
 
 
