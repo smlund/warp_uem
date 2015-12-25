@@ -203,8 +203,8 @@ if args.field_solver_off:
   solver.ldosolve = False
 
 # Generate initial plots
-ix_cen = get_supremum_index(w3d,"x",0)
-iy_cen = get_supremum_index(w3d,"y",0)
+ix_cen = get_supremum_index(w3d.xmesh,0)
+iy_cen = get_supremum_index(w3d.ymesh,0)
 electric_potential_plots(ix_cen,iy_cen)
 
 # Advance simulation through each step interval set  
