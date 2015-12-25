@@ -6,7 +6,8 @@ except ImportError:
 import numpy as np
 from ConfigParser import SafeConfigParser as ConfigParser
 from Forthon import fzeros
-from discrete_fourspace.mesh import get_index_of_point
+from discrete_fourspace.mesh import get_index_of_point, r_mesh_to_xy_mesh
+from discrete_fourspace.mesh import linear_field_projection_from_r_to_xy
 from fields.dat import read_dat_file_as_numpy_arrays
 
 class FieldPreProcessor(object):
@@ -28,6 +29,8 @@ class FieldPreProcessor(object):
         by the coordinate.
       number_of_steps: A dict containing the number of steps of each of the coordinates key
         by the coordinate.
+      xmin: The minimum value of the z coordinate in the filepath.
+      ymin: The minimum value of the z coordinate in the filepath.
       zmin: The minimum value of the z coordinate in the filepath.
       zmax: The max z in the field.
       zlen: The length over which the field is applied.
@@ -39,7 +42,7 @@ class FieldPreProcessor(object):
     self.parseData(file_content["data"])
     self.fillDerivedData()
     self.correctZCoordinate()
-    self.ravel()
+    self.ravelForFortran(**kwargs)
 
   def parseData(self, data):
     """
@@ -89,6 +92,12 @@ class FieldPreProcessor(object):
     if not hasattr(self,"number_of_steps"):
       self.number_of_steps = {}
 
+    if self.isRZ():
+      self.xmin = -1.*self.coordinates["r"].max()
+      self.ymin = -1.*self.coordinates["r"].max()
+    else:
+      self.xmin = self.coordinates["x"].min()
+      self.ymin = self.coordinates["y"].min()
     self.zmin = self.coordinates["z"].min()
     self.zmax = self.coordinates["z"].max()
     self.zlen = self.zmax - self.zmin
@@ -109,7 +118,7 @@ class FieldPreProcessor(object):
     self.coordinates["z"] -= self.coordinates["z"].min()
     return
 
-  def ravel(self):
+  def ravelForFortran(self,**kwargs):
     """
     Ravels the fields into a convenient format for working
     with fortran.
@@ -119,12 +128,11 @@ class FieldPreProcessor(object):
       None --- but rewrites the field numpy arrays.
     """
     if self.isRZ():
-      self.ravelRZ()
-    else:
-      self.ravelXYZ()
+      self.interpolateRToXY(**kwargs)
+    self.ravelXYZForFortran()
     return
 
-  def ravelXYZ(self):
+  def ravelXYZForFortran(self):
     """
     Ravels the XYZ fields into a convenient format for working
     with fortran.
@@ -159,8 +167,9 @@ class FieldPreProcessor(object):
       self.fields[field_type]["y"] = fy
       self.fields[field_type]["z"] = fz
 
-  def ravelRZ(self):
+  def ravelRZForFortran(self):
     """
+    This function is no longer in use
     Ravels the RZ fields into a convenient format for working
     with fortran.
     Args:
@@ -219,6 +228,8 @@ class FieldPreProcessor(object):
     config.add_section(section)
     for field_type, filepath in pickle_filepath.iteritems():
       config.set(section,field_type+"_pickled_field", filepath)
+    config.set(section,"xmin", str(self.xmin))
+    config.set(section,"ymin", str(self.ymin))
     config.set(section,"zmin", str(self.zmin))
     config.set(section,"zmax", str(self.zmax))
     config.set(section,"zlen", str(self.zlen))
@@ -245,12 +256,74 @@ class FieldPreProcessor(object):
     """
     return set(self.coordinates) == set(["r","z"])
 
-#The methods below here are for a different object.
-#
-#  def getArgs(self):
-#    """
-#    Returns an unpacked list of arguments for
-#    """
+  def interpolateRToXY(self,r_to_xy_interpolation_function=linear_field_projection_from_r_to_xy,**kwargs):
+    """
+    Passes slices of the rz field grid to the r_to_xy_interpolation function
+    and assigns the output to an xyz field grid.
+    Args:
+      self: Standard python object oriented notation. 
+      r_to_zy_interpolation_function: The function to be used to do the
+      x y interpolation.  Input must be the numpy arrays (r,fr,fz, x, y) and
+      output must be a numpy arrays (fx, fy, fz).
+    Return value:
+      None: But unsets all "r" components, adds "x" and "y" components, 
+        and reassigns both coordinates and fields to the new sized arrays.  
+    """
+    dr = self.stepsize["r"] #Just for ease of coding.
+
+    #This algorithm assumes that each unique_z is matched up with each 
+    #unique r (that is, the total dimensions of the grid are unique_z x unique_r
+    #in the normal way).
+    unique_z = np.unique(self.coordinates["z"])
+    unique_r = np.unique(self.coordinates["r"])
+    unique_x, unique_y, dx, dy, nx, ny = r_mesh_to_xy_mesh(unique_r)
+    #Dicts to keep track of the output of the function
+    fx = {}
+    fy = {}
+    fz = {}
+
+    for z in np.nditer(unique_z):
+      indices = np.where(self.coordinates["z"] == z)
+      for field_type, field in self.fields.iteritems():
+        #Get the constant z slice of each element we need.
+        current_fr = field["r"][indices]
+        current_fz = field["z"][indices]
+        #Pass control to the interpolation function
+        fx_piece, fy_piece, fz_piece = \
+            r_to_xy_interpolation_function(unique_r, current_fr, current_fz, unique_x, unique_y)
+        #Add the piece just calculated to object that keeps track of it.
+        try:
+          fx[field_type].append(fx_piece)
+          fy[field_type].append(fy_piece)
+          fz[field_type].append(fz_piece)
+        except KeyError:
+          fx[field_type]=[fx_piece]
+          fy[field_type]=[fy_piece]
+          fz[field_type]=[fz_piece]
+
+    #Overwrite the elements with the new numpy arrays and values
+    self.coordinates["x"] = np.tile(unique_x,unique_z.size)
+    self.coordinates["y"] = np.tile(unique_y,unique_z.size)
+    self.coordinates["z"] = np.repeat(unique_z,unique_x.size)
+    self.stepsize["x"] = dx
+    self.stepsize["y"] = dy
+    self.number_of_steps["x"] = nx
+    self.number_of_steps["y"] = ny
+
+
+    #Concatenate the arrays into single array and save.
+    for field_type in self.fields.keys():
+      self.fields[field_type]["x"] = np.hstack(fx[field_type])
+      self.fields[field_type]["y"] = np.hstack(fy[field_type])
+      self.fields[field_type]["z"] = np.hstack(fz[field_type])
+
+    #Delete the unnecesary r components
+    del self.coordinates["r"]
+    del self.stepsize["r"]
+    del self.number_of_steps["r"]
+    for field_type, field in self.fields.iteritems():
+      del self.fields[field_type]["r"]
+        
 
 def read_file_as_dict_of_numpy_arrays(filepath,formattype=""):
 

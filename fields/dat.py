@@ -53,7 +53,11 @@ def read_dat_file(dat_file):
       line = line.strip()
       pieces = line.split()
       pieces = [float(p) for p in pieces]
-      table.append(dict(zip(output["fieldnames"],pieces)))
+      row = dict(zip(output["fieldnames"],pieces))
+      for fieldname in output["fieldnames"]:
+        if fieldname in ["x","y","z","r"]:
+          row[fieldname] = row[fieldname]/1000 #Fix units
+      table.append(row)
     output["data"] = table
   return output
    
