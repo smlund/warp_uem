@@ -19,6 +19,11 @@ parser.add_argument('-e','--extraction_field',
                     dest="extraction_field", 
                     help='Specifies the extraction electric field gradient in MV.', 
                     default=1.)
+parser.add_argument('-o','--output_prefix',  
+                    dest="prefix", 
+                    help='Specifies the prefix to be used for the output file.  ' + 
+                    'Deault will use the config file name without config.', 
+                    default=None)
 args = parser.parse_args()
 
 print "Argument dictionary: " 
@@ -35,7 +40,13 @@ from warp import *
 #from histplot import *
 
 # Invoke setup routine: needed to created a cgm file for plots
-setup()
+
+#Handle the output path and setup of the plots.
+if args.prefix is None:
+  prefix, ext = os.path.splitext(args.config_file)
+else:
+  prefix = args.prefix
+setup(prefix=prefix,cgmlog=0)
 
 #Load the config file and parameters from config file.
 config = MyConfigParser()

@@ -10,6 +10,11 @@ parser.description = description
 parser.formatter_class=argparse.RawDescriptionHelpFormatter
 parser.add_argument('config_file', type=str, 
                     help='The path to the field config file produced by prepocessing.')
+parser.add_argument('-o','--output_prefix',  
+                    dest="prefix", 
+                    help='Specifies the prefix to be used for the output file.  ' + 
+                    'Deault will use the config file name without config.', 
+                    default=None)
 args = parser.parse_args()
 from fields.field_loader import FieldLoader
 from warp import *
@@ -17,7 +22,12 @@ from warp import *
 print "Argument dictionary: " 
 print "\t" + "\n\t".join([k + " = " + str(v) for k, v in vars(args).iteritems()])
 
-setup()
+#Handle the output path and setup of the plots.
+if args.prefix is None:
+  prefix, ext = os.path.splitext(args.config_file)
+else:
+  prefix = args.prefix
+setup(prefix=prefix,cgmlog=0)
 plots = {}
 field_loader = FieldLoader(args.config_file)
 nx = field_loader.number_of_steps["x"]
