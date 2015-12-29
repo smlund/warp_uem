@@ -70,7 +70,7 @@ def read_rf_ascii_file(dat_file):
         break
       pieces = [float(p) for p in pieces]
       converted_pieces = [pieces[i]*unit_conversion[i] for i in range(len(pieces))]
-      row = dict(zip(output["fieldnames"],pieces))
+      row = dict(zip(output["fieldnames"],converted_pieces))
       table.append(row)
     output["data"] = table
   return output

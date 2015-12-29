@@ -33,13 +33,13 @@ for field_type in args_dict:
     plots["magnetic"] = True
 
 if "electric" in plots:
-  plotegrd(ib[0],component="z",iy=0,iz=0)
+  plotegrd(ie[0],component="z",iy=0,iz=0)
   fma()
-  plotegrd(ib[0],component="z",ix=0,iy=0)
+  plotegrd(ie[0],component="z",ix=0,iy=0)
   fma()
-  plotegrd(ib[0],component="x",iy=0,iz=0)
+  plotegrd(ie[0],component="x",iy=0,iz=0)
   fma()
-  plotegrd(ib[0],component="x",ix=0,iy=0)
+  plotegrd(ie[0],component="x",ix=0,iy=0)
   fma()
 if "magnetic" in plots:
   plotbgrd(ib[0],component="z",iy=0,iz=0)
