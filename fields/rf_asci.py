@@ -65,6 +65,9 @@ def read_rf_ascii_file(dat_file):
     for line in f:
       line = line.strip()
       pieces = line.split()
+      #End when there is no longer any data.  This file type contains a footer.
+      if len(pieces) <= 1:
+        break
       pieces = [float(p) for p in pieces]
       converted_pieces = [pieces[i]*unit_conversion[i] for i in range(len(pieces))]
       row = dict(zip(output["fieldnames"],pieces))

@@ -9,6 +9,7 @@ from Forthon import fzeros
 from discrete_fourspace.mesh import get_index_of_point, r_mesh_to_xy_mesh
 from discrete_fourspace.mesh import linear_field_projection_from_r_to_xy
 from fields.dat import read_dat_file_as_numpy_arrays
+from fields.rf_asci import read_rf_ascii_file_as_numpy_arrays
 
 class FieldPreProcessor(object):
   """
@@ -332,7 +333,7 @@ def read_file_as_dict_of_numpy_arrays(filepath,formattype=""):
   Args:
     filepath: The full path to the file we want to load.
     formattype: Optional argument telling us what is the format
-      type.  Right now, only supports Poisson.  If None, uses
+      type.  Right now, only supports Poisson and RF ascii.  If None, uses
       the file extension to determine the file loader.
   Return value:
     A dictionary of data from the file.
@@ -343,5 +344,7 @@ def read_file_as_dict_of_numpy_arrays(filepath,formattype=""):
   filepath_no_extension, file_extension = os.path.splitext(filepath)
   if formattype == "Poisson" or file_extension == ".dat":
     return read_dat_file_as_numpy_arrays(filepath)
+  if formattype == "RF ascii":
+    return read_rf_ascii_file_as_numpy_arrays(filepath)
   raise Exception("The formattype and file_extension is not supported.")
 
