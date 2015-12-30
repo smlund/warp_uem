@@ -39,7 +39,6 @@ for field_type in args_dict:
     plots["electric"] = True
   elif field_type == "magnetic":
     ib = addnewbgrd(*args_dict[field_type]["args"],**args_dict[field_type]["kwargs"])
-    print ib
     plots["magnetic"] = True
 
 if "electric" in plots:
