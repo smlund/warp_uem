@@ -7,7 +7,7 @@ class DiagnosticsByTimes(UserEvent):
   transparent then using UserEvent.
   """
 
-  def __init__(self,callback,top,times):
+  def __init__(self,callback,obj,top,times):
     """
     The init method captures what happens when instance = DiagnosticsBySteps()
     is called.  This passes the callback function and the 
@@ -18,13 +18,14 @@ class DiagnosticsByTimes(UserEvent):
         for object oriented python.
       callback: The function to that will be called when
         DiagnosticsBySteps.callFunction is called.
+      obj: to be passed to function
       top: The top object from warp
       times:  A list of approximate times at which the diagnostics
         will be launched.  The program will launch the diagnostic
         at the first time that is equal or greater than the
         provided time.
     """
-    args = [top]
+    args = [obj]
     additional_attr = {"top": top, "times": list(times)}
     UserEvent.__init__(self,callback,args,additional_attr) #This partially freezes the attributes
 
@@ -63,7 +64,7 @@ class DiagnosticsBySteps(UserEvent):
   transparent then using UserEvent.
   """
 
-  def __init__(self,callback,top,steps):
+  def __init__(self,callback,obj,top,steps):
     """
     The init method captures what happens when instance = DiagnosticsBySteps()
     is called.  This passes the callback function and the 
@@ -74,6 +75,7 @@ class DiagnosticsBySteps(UserEvent):
         for object oriented python.
       callback: The function to that will be called when
         DiagnosticsBySteps.callFunction is called.
+      obj: to be passed to function
       top: The top object from warp
       steps:  A list of steps (iterations) at which the diagnostics
         will be launched.
