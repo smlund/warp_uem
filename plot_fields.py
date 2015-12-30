@@ -22,6 +22,7 @@ from warp import *
 print "Argument dictionary: " 
 print "\t" + "\n\t".join([k + " = " + str(v) for k, v in vars(args).iteritems()])
 
+<<<<<<< HEAD
 #Handle the output path and setup of the plots.
 if args.prefix is None:
   prefix, ext = os.path.splitext(args.config_file)
@@ -42,13 +43,13 @@ for field_type in args_dict:
     plots["magnetic"] = True
 
 if "electric" in plots:
-  plotegrd(ie[0],component="z",iy=0,iz=0)
+  plotegrd(ib[0],component="z",iy=0,iz=0)
   fma()
-  plotegrd(ie[0],component="z",ix=0,iy=0)
+  plotegrd(ib[0],component="z",ix=0,iy=0)
   fma()
-  plotegrd(ie[0],component="x",iy=0,iz=0)
+  plotegrd(ib[0],component="x",iy=0,iz=0)
   fma()
-  plotegrd(ie[0],component="x",ix=0,iy=0)
+  plotegrd(ib[0],component="x",ix=0,iy=0)
   fma()
 if "magnetic" in plots:
   plotbgrd(ib[0],component="z",iy=0,iz=0)
