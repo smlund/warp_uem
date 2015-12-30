@@ -56,15 +56,15 @@ class DiagnosticsByTimes(UserEvent):
     """
     self.times.pop(0)
 
-class DiagnosticsBySteps(UserEvent):
+class DumpBySteps(UserEvent):
   """
-  A class to provide the interface with the the diagnostics
-  set up in warp so that the diagnositcs function runs
+  A class to provide the interface with the the dump
+  set up in warp so that the dump function runs
   at the specified steps.  This is a little more 
   transparent then using UserEvent.
   """
 
-  def __init__(self,callback,obj,top,steps):
+  def __init__(self,callback,obj,mass,top,steps):
     """
     The init method captures what happens when instance = DiagnosticsBySteps()
     is called.  This passes the callback function and the 
@@ -76,11 +76,12 @@ class DiagnosticsBySteps(UserEvent):
       callback: The function to that will be called when
         DiagnosticsBySteps.callFunction is called.
       obj: to be passed to function
+      mass: The mass of the macroparticle used to do momentum conversion.
       top: The top object from warp
       steps:  A list of steps (iterations) at which the diagnostics
         will be launched.
     """
-    args = [top]
+    args = [obj,mass]
     additional_attr = {"top": top, "steps": list(steps)}
     UserEvent.__init__(self,callback,args,additional_attr) #This partially freezes the attributes
 
@@ -98,4 +99,4 @@ class DiagnosticsBySteps(UserEvent):
     """
     if self.top.it not in self.steps:
       return #Only calls callback when current iteration is in the steps list.
-    UserEvent.callFunction(self,*args,**kwargs)
+    self.callback(self.top.it,*self.args)#Star unpacks

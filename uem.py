@@ -66,6 +66,11 @@ parser.add_argument('--turn_off_adjust_velocity', dest='adjust_velocity',
                     "the velocity when the electrons are injected due to differences " +
                     "betweeen the timestep and the particle's time.  Default has the " + 
                     "adjustment on.", default=True)
+parser.add_argument('--iterative_phase_space_dump', dest="iterative_dump", type=int,
+                    help='Tells the program to print the x, y, z, px, py, pz coordinates ' +
+                    'of all the macroparticles at every iterative_dump steps.  Default is ' + 
+                    'to skip this step.', default=None)
+
 
 args = parser.parse_args()
 
@@ -75,7 +80,8 @@ print "\t" + "\n\t".join([k + " = " + str(v) for k, v in vars(args).iteritems()]
 from config.my_config import MyConfigParser, parse_key_as_numpy_array
 from config.simulation_type import get_mesh_symmetry_factor, get_solver
 from config.elements import load_elements
-from diagnostics.diagnostic_classes import DiagnosticsByTimes
+from diagnostics.diagnostic_classes import DiagnosticsByTimes, DumpBySteps
+from diagnostics.phase_volume import dump_phase_volume
 from diagnostics.steves_uem_diagnostics import steves_plots, electric_potential_plots
 from discrete_fourspace.mesh import get_supremum_index
 from injectors.injector_classes import ElectronInjector
@@ -182,9 +188,14 @@ electron_injector = ElectronInjector(steves_injectelectrons,top, args.input_file
 installuserinjection(electron_injector.callFunction)  # install injection function in timestep 
 
 #Diagnostics
-diagnostics = DiagnosticsByTimes(steves_plots,top,diagnostic_times)
+diagnostics = DiagnosticsByTimes(steves_plots,top,top,diagnostic_times)
 installafterstep(diagnostics.callFunction) # install function myplots() to be called after each timestep
 
+if args.iterative_dump is not None: #Install the phase volume dump.
+  dump_steps = range(args.iterative_dump,int(steps_tot),args.iterative_dump) #Every iterative_dump step.
+  phase_volume_dump = DumpBySteps(dump_phase_volume,electron_injector.getElectronContainer(),
+        args.electrons_per_macroparticle*top.emass,top,dump_steps)
+  installafterstep(phase_volume_dump.callFunction)
 """
  Generate the PIC code
    * 3D code "w3d" is always used here: 3d mover is same and 
