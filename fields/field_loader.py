@@ -8,6 +8,7 @@ from config.my_config import MyConfigParser as ConfigParser
 from Forthon import fzeros
 from discrete_fourspace.mesh import get_index_of_point
 from fields.dat import read_dat_file_as_numpy_arrays
+from warp import *
 
 class FieldLoader(object):
   """
@@ -121,3 +122,74 @@ class FieldLoader(object):
       output[field_type]["args"] = args_out
       output[field_type]["kwargs"] = kwargs_out
     return output
+
+  def installFields(self,top):
+    """
+    Installs the fields within the top object.
+    Args:
+      self: Standard python object oriented notation. 
+      top: The forthon top object generally loaded in warp applications.
+    Return value:
+      None --- although field id is written.
+    """
+    args_dict = self.getArgs()
+    for field_type in args_dict:
+      if "id" in self.fields[field_type].keys():
+        raise KeyError("Field has already been installed.")
+      if field_type == "electric":
+        self.fields[field_type]["id"] = addnewegrd(*args_dict[field_type]["args"],**args_dict[field_type]["kwargs"])
+      elif field_type == "magnetic":
+        self.fields[field_type]["id"] = addnewbgrd(*args_dict[field_type]["args"],**args_dict[field_type]["kwargs"])
+
+  def diagnosticPlots(self,top):
+    """
+    Plots the fields that have been installed.
+    Args:
+      self: Standard python object oriented notation. 
+      top: The forthon top object generally loaded in warp applications.
+    Return value:
+      None
+    """
+    for field_type in self.fields.keys():
+      if "id" in self.fields[field_type]: #Field has been installed.
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "x", "x")
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "x", "z")
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "y", "y")
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "y", "z")
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "z", "x")
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "z", "z")
+
+def plot_field_diagnostics(top, field_type, grd_id, steps_dict, field_component, independent_variable):
+  """
+  Standard plot for a single field component and independent variable.
+  Args:
+    top: The forthon top object generally loaded in warp applications.
+    field_type: The type of field to be plotted.  Either "electric" or "magnetic" currently.
+    grd_id: The grid id to plot.
+    steps_dict: A dictionary with the number of steps in the x, y, and z direction.
+    field_component: The component of the field desired to be plotted.
+    independent_variable: The variable, x, y, or z, that will appear on the x-axis.  The other
+      two variables will be plot-summed over.
+  Return value:
+    None - but writes to the cgm file.
+  """
+  if field_type == "electric":
+    plot_func = plotegrd
+  if field_type == "magnetic":
+    plot_func = plotbgrd
+
+  #Get the coordinates that are not the independent variable
+  all_coordinates = set(steps_dict.keys())
+  remaining_coordinates = list(all_coordinates.difference(set([independent_variable])))
+  c1 = remaining_coordinates[0]
+  ic1 = "i"+c1
+  c2 = remaining_coordinates[1]
+  ic2 = "i"+c2
+
+  #Plot over all non-independent variable components.
+  for i1 in range(steps_dict[c1]+1):
+    temp_step_dict = { ic1:i1 }
+    for i2 in range(steps_dict[c2]+1):
+      temp_step_dict[ic2] = i2
+      plot_func(grd_id[0],component=field_component,**temp_step_dict)
+  fma()

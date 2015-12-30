@@ -22,7 +22,6 @@ from warp import *
 print "Argument dictionary: " 
 print "\t" + "\n\t".join([k + " = " + str(v) for k, v in vars(args).iteritems()])
 
-<<<<<<< HEAD
 #Handle the output path and setup of the plots.
 if args.prefix is None:
   prefix, ext = os.path.splitext(args.config_file)
@@ -31,32 +30,5 @@ else:
 setup(prefix=prefix,cgmlog=0)
 plots = {}
 field_loader = FieldLoader(args.config_file)
-nx = field_loader.number_of_steps["x"]
-nz = field_loader.number_of_steps["z"]
-args_dict = field_loader.getArgs()
-for field_type in args_dict:
-  if field_type == "electric":
-    ie = addnewegrd(*args_dict[field_type]["args"],**args_dict[field_type]["kwargs"])
-    plots["electric"] = True
-  elif field_type == "magnetic":
-    ib = addnewbgrd(*args_dict[field_type]["args"],**args_dict[field_type]["kwargs"])
-    plots["magnetic"] = True
-
-if "electric" in plots:
-  plotegrd(ib[0],component="z",iy=0,iz=0)
-  fma()
-  plotegrd(ib[0],component="z",ix=0,iy=0)
-  fma()
-  plotegrd(ib[0],component="x",iy=0,iz=0)
-  fma()
-  plotegrd(ib[0],component="x",ix=0,iy=0)
-  fma()
-if "magnetic" in plots:
-  plotbgrd(ib[0],component="z",iy=0,iz=0)
-  fma()
-  plotbgrd(ib[0],component="z",ix=0,iy=0)
-  fma()
-  plotbgrd(ib[0],component="x",iy=0,iz=0)
-  fma()
-  plotbgrd(ib[0],component="x",ix=0,iy=0)
-  fma()
+field_loader.installFields(top)
+field_loader.diagnosticPlots(top)
