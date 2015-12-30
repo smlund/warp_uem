@@ -35,3 +35,14 @@ class ElectronInjector(UserEvent):
     UserEvent.__init__(self,callback,args) #This partially freezes the attributes
 
   #def callFunction(self): This method is inherited from UserEvent
+
+  def getElectronContainer(self):
+    """
+    An interface to return the electrons that were originally created.
+    Args:
+      self: The ElectronInjector object --- standard notation
+        for object oriented python.
+    Return value:
+      electrons: The container with the electrons in it.
+    """
+    return self.args[9]
