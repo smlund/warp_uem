@@ -16,7 +16,7 @@ parser.add_argument('--3D_simulation',
                     help='Specify the use of "w3d" aka the 3 dimensional simulation.  ' +
                     'Default is the "wrz" aka rz simulation.', default="wrz")
 parser.add_argument('-e','--extraction_field',  
-                    dest="extraction_field", 
+                    dest="extraction_field", type=float,
                     help='Specifies the extraction electric field gradient in MV.', 
                     default=1.)
 parser.add_argument('-o','--output_prefix',  
