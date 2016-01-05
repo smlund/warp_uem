@@ -70,6 +70,12 @@ parser.add_argument('--iterative_phase_space_dump', dest="iterative_dump", type=
                     help='Tells the program to print the x, y, z, px, py, pz coordinates ' +
                     'of all the macroparticles at every iterative_dump steps.  Default is ' + 
                     'to skip this step.', default=None)
+parser.add_argument('--phase_space_dump_step_list', dest="dump_list", type=str,
+                    help='Tells the program to print the x, y, z, px, py, pz coordinates ' +
+                    'of all the macroparticles at the listed steps separated by a comma.  ' + 
+                    'For example, 35,46,72 will tell the program to dump the  coordinats after ' + 
+                    'the 35th, 46th, and 72nd steps.  Default is ' + 
+                    'to skip this step.', default=None)
 
 
 args = parser.parse_args()
@@ -193,6 +199,11 @@ installafterstep(diagnostics.callFunction) # install function myplots() to be ca
 
 if args.iterative_dump is not None: #Install the phase volume dump.
   dump_steps = range(args.iterative_dump,int(steps_tot),args.iterative_dump) #Every iterative_dump step.
+  phase_volume_dump = DumpBySteps(dump_phase_volume,electron_injector.getElectronContainer(),
+        args.electrons_per_macroparticle*top.emass,top,dump_steps)
+  installafterstep(phase_volume_dump.callFunction)
+if args.dump_list is not None: #Install the phase volume dump.
+  dump_steps = [int(s) for s in args.dump_list.split(",")]
   phase_volume_dump = DumpBySteps(dump_phase_volume,electron_injector.getElectronContainer(),
         args.electrons_per_macroparticle*top.emass,top,dump_steps)
   installafterstep(phase_volume_dump.callFunction)
