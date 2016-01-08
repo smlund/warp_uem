@@ -129,8 +129,8 @@ def linear_field_projection_from_r_to_xy(r_array, fr, fz, x_array, y_array):
       fr_upper = fr[supremum_index+1]
       fz_lower = fz[supremum_index]
       fz_upper = fz[supremum_index+1]
-      fr_to_use = fr_lower*(r_xy-r_lower)/dr + fr_upper*(r_upper-r_xy) #Linear interpolation
-      fz_to_use = fz_lower*(r_xy-r_lower)/dr + fz_upper*(r_upper-r_xy) #Linear interpolation
+      fr_to_use = fr_lower*(r_xy-r_lower)/dr + fr_upper*(r_upper-r_xy)/dr #Linear interpolation
+      fz_to_use = fz_lower*(r_xy-r_lower)/dr + fz_upper*(r_upper-r_xy)/dr #Linear interpolation
     fx_out[i] = fr_to_use*x/r_xy
     fy_out[i] = fr_to_use*y/r_xy
     fz_out[i] = fz_to_use
