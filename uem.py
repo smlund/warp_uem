@@ -117,6 +117,7 @@ diagnostic_time_interval = config.get("Simulation parameters","diagnostic_time_i
 #Load the parameters for the w3d and top objects from the config.
 set_attributes_with_config_section(top, config, "top parameters", {",":parse_key_as_numpy_array})
 set_attributes_with_config_section(w3d, config, "w3d parameters")
+set_attributes_with_config_section(f3d, config, "f3d parameters")
 
 
 #Derived parameters
