@@ -15,6 +15,11 @@ parser.add_argument('-o','--output_prefix',
                     help='Specifies the prefix to be used for the output file.  ' + 
                     'Deault will use the config file name without config.', 
                     default=None)
+parser.add_argument('--turn_off_loops',  dest='loops',
+                    action='store_false', 
+                    help='Turns off loops to plot for all values of the other coordinates.  ' + 
+                    'Deault will have loops on.', 
+                    default=True)
 args = parser.parse_args()
 from fields.field_loader import FieldLoader
 from warp import *
@@ -31,4 +36,4 @@ setup(prefix=prefix,cgmlog=0)
 plots = {}
 field_loader = FieldLoader(args.config_file)
 field_loader.installFields(top)
-field_loader.diagnosticPlots(top)
+field_loader.diagnosticPlots(top,loops=args.loops)
