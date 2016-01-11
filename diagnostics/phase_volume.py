@@ -15,8 +15,11 @@ def dump_phase_volume(step,obj,mass):
   y = obj.gety()
   z = obj.getz()
   px = mass*obj.getux()
-  py = mass*obj.getux()
-  pz = mass*obj.getux()
+  py = mass*obj.getuy()
+  pz = mass*obj.getuz()
+  vx = obj.getvx()
+  vy = obj.getvy()
+  vz = obj.getvz()
 
   with open(str(step)+"-warp_uem.txt","w") as f:
     for i in range(n):
@@ -27,6 +30,9 @@ def dump_phase_volume(step,obj,mass):
       output.append(px[i])
       output.append(py[i])
       output.append(pz[i])
+      output.append(vx[i])
+      output.append(vy[i])
+      output.append(vz[i])
       output = [str(o) for o in output]
       f.write(" ".join(output) + "\n")
   return 

@@ -129,3 +129,11 @@ def electric_potential_plots(ix, iy):
   ptitles("Initial (No Beam) On-Axis (x=y=0) ES Potential","z [mm]","Phi [kV]")
   fma() 
 
+def just_vz_vs_z(top):
+  # z - vz projection: two ways, black and white scatter plot and 
+  #                    colorized with intensity scale 
+  z_cen = top.zbar[0,0]
+  t_label = "time = %10.4f ps, <z> = %6.4f mm"%(top.time/ps,z_cen/mm)
+  ppzvz(iw=0,xscale=1./mm,titles=false,color='density',ncolor=25)
+  ptitles("vz-z Projection Electrons","z [mm]","vz [m/s]",t_label)
+  fma()
