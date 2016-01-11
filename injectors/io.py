@@ -42,3 +42,21 @@ def phase_volume_pickle_loader(pickle_dict_file,time_conversion=1.,
     pz[ii] = row['pz']*momentum_conversion
 
   return (t,x,y,z,px,py,pz)
+
+
+def get_pulse_velocity_from_momentum(coordinate_array_dict,mass,direction="z"):
+  """
+  Calculates the boost to the mean "particle" assuming the mean
+  momentums in the other two directions are 0. 
+  Args:
+    coordinate_array_dict: A dictionary with at least the keys
+      z, px, py, pz with values for the corresponding numpy arrays. 
+    mass: Mass of the particle to rescale the momentum.
+    direction: The desired direction for which the velocity will be calculated.
+  Return value:
+    The mean velocity in the provided direction.
+  """
+  clight = 299792458
+  mean_p = numpy.mean(coordinate_array_dict["p"+direction])
+  gamma  = numpy.sqrt(1. + (mean_p/(mass*clight))**2 )
+  return mean_p/(mass*gamma)

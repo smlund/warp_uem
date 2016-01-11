@@ -56,6 +56,20 @@ def steves_injectelectrons(top, t_inj, x_inj, y_inj, z_inj, px_inj, py_inj, pz_i
   # Inject electron macroparticles 
   electrons.addparticles(x=xinj,y=yinj,z=zinj,vx=vxinj,vy=vyinj,vz=vzinj,gi=giinj)
 
+def continue_injectelectrons(top, xinj, yinj, zinj, vxinj, vyinj, vzinj, electrons):
+  """
+  Function to inject electrons macroparticles all at once.
+    Args:
+      top: The top object from warp.
+      (x,y,z,px,py,pz)_inj: Numpy arrays with the phase coordinates of the particles.
+      electrons: A container holding the elctrons.
+    Return value:
+      None --- although the electrons container is modified in place.
+  """
+  # Calculate macro particle velocities and inverse gamma factors to inject
+  giinj  = sqrt( 1.  - (vxinj**2 + vyinj**2 + vzinj**2)/(top.clight**2) )
+  # Inject electron macroparticles 
+  electrons.addparticles(x=xinj,y=yinj,z=zinj,vx=vxinj,vy=vyinj,vz=vzinj,gi=giinj)
 
 def advance_position_over_remaining_time(goal_time,tinj,xinj,yinj,zinj,vxinj,vyinj,vzinj):
   """
