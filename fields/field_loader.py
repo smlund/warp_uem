@@ -8,6 +8,7 @@ from config.my_config import MyConfigParser as ConfigParser
 from Forthon import fzeros
 from discrete_fourspace.mesh import get_index_of_point
 from fields.dat import read_dat_file_as_numpy_arrays
+from fields.time_dependent_functions import sine_at_com_distance
 from warp import *
 
 class FieldLoader(object):
@@ -38,8 +39,10 @@ class FieldLoader(object):
       zmin: The minimum value of the z coordinate in the filepath.
       zmax: The max z in the field.
       zlen: The length over which the field is applied.
+      current_position: The position of the center of mass of the pulse
+        to be used if a distance needs to be calculated.
       time_dependent_function: An option function callback (function is a function of top.time)
-        that can add time dependence to the field.  Default is no such file.
+        that can add time dependence to the field.  Default is no such function.
     """
     if config_filepath is None and config is None:
       raise Exception("Either the config_filepath needs to be specified or a config parser object " + 
@@ -48,6 +51,7 @@ class FieldLoader(object):
       config = ConfigParser()
       config.read(config_filepath)
     self.config = config
+    self.section = section
     
     self.xmin = config.get(section,"xmin")
     self.ymin = config.get(section,"ymin")
@@ -141,7 +145,7 @@ class FieldLoader(object):
       elif field_type == "magnetic":
         self.fields[field_type]["id"] = addnewbgrd(*args_dict[field_type]["args"],**args_dict[field_type]["kwargs"])
 
-  def diagnosticPlots(self,top):
+  def diagnosticPlots(self,top,**kwargs):
     """
     Plots the fields that have been installed.
     Args:
@@ -152,14 +156,14 @@ class FieldLoader(object):
     """
     for field_type in self.fields.keys():
       if "id" in self.fields[field_type]: #Field has been installed.
-        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "x", "x")
-        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "x", "z")
-        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "y", "y")
-        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "y", "z")
-        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "z", "x")
-        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "z", "z")
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "x", "x",**kwargs)
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "x", "z",**kwargs)
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "y", "y",**kwargs)
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "y", "z",**kwargs)
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "z", "x",**kwargs)
+        plot_field_diagnostics(top, field_type, self.fields[field_type]["id"], self.number_of_steps, "z", "z",**kwargs)
 
-def plot_field_diagnostics(top, field_type, grd_id, steps_dict, field_component, independent_variable):
+def plot_field_diagnostics(top, field_type, grd_id, steps_dict, field_component, independent_variable,loops=True,**kwargs):
   """
   Standard plot for a single field component and independent variable.
   Args:
@@ -187,9 +191,13 @@ def plot_field_diagnostics(top, field_type, grd_id, steps_dict, field_component,
   ic2 = "i"+c2
 
   #Plot over all non-independent variable components.
-  for i1 in range(steps_dict[c1]+1):
-    temp_step_dict = { ic1:i1 }
-    for i2 in range(steps_dict[c2]+1):
-      temp_step_dict[ic2] = i2
-      plot_func(grd_id[0],component=field_component,**temp_step_dict)
+  if loops:
+    for i1 in range(steps_dict[c1]+1):
+      temp_step_dict = { ic1:i1 }
+      for i2 in range(steps_dict[c2]+1):
+        temp_step_dict[ic2] = i2
+        plot_func(grd_id[0],component=field_component,**temp_step_dict)
+  else:
+    temp_step_dict = { ic1:0, ic2:0 }
+    plot_func(grd_id[0],component=field_component,**temp_step_dict)
   fma()

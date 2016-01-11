@@ -9,10 +9,7 @@ from Forthon import fzeros
 from discrete_fourspace.mesh import get_index_of_point, r_mesh_to_xy_mesh
 from discrete_fourspace.mesh import linear_field_projection_from_r_to_xy
 from fields.dat import read_dat_file_as_numpy_arrays
-<<<<<<< HEAD
 from fields.rf_asci import read_rf_ascii_file_as_numpy_arrays
-=======
->>>>>>> 78da7612e19b590ca4ea003bbfe16f507c86488e
 
 class FieldPreProcessor(object):
   """
