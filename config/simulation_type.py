@@ -16,7 +16,7 @@ def get_mesh_symmetry_factor(simtype,top,w3d):
       return 1
     else:
       return 2
-  elif simtype == "wrz":
+  elif simtype in ["wrz","em2d","em3d"]:
     return 1 
   raise Exception("Error: simtype not defined")
 
@@ -33,9 +33,14 @@ def get_solver(simtype,top,w3d):
   """
   if simtype == "w3d":
     # --- 3D ES
-    return MultiGrid3D()
+    return MRBlock3D()
+  elif simtype == "em3d":
+    return EM3D()
+  elif simtype == "em2d":
+    w3d.solvergeom = w3d.RZgeom
+    return EM2D()
   elif simtype == "wrz":
     # r-z ES
     w3d.solvergeom = w3d.RZgeom
-    return MultiGrid2D()
+    return MRBlock2D()
   raise Exception("Error: simtype not defined")
