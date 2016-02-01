@@ -44,6 +44,14 @@ parser.add_argument('--3D_simulation',
                     dest="sym_type", action="store_const", const="w3d",
                     help='Specify the use of "w3d" aka the 3 dimensional simulation.  ' +
                     'Default is the "wrz" aka rz simulation.', default="wrz")
+parser.add_argument('--electromagnetic_3d',  
+                    dest="sym_type", action="store_const", const="em3d",
+                    help='Specify the use of "em3d", the 3 dimensional electro magnetic solver.  ' +
+                    'Default is the "wrz" aka rz simulation.', default="wrz")
+parser.add_argument('--electromagnetic_2d',  
+                    dest="sym_type", action="store_const", const="em2d",
+                    help='Specify the use of "em2d", the 2 dimensional electro magnetic solver.  ' +
+                    'Default is the "wrz" aka rz simulation.', default="wrz")
 parser.add_argument('-e','--extraction_field',  
                     dest="extraction_field", type=float,
                     help='Specifies the extraction electric field gradient in MV.', 
@@ -76,6 +84,9 @@ parser.add_argument('--phase_space_dump_step_list', dest="dump_list", type=str,
                     'For example, 35,46,72 will tell the program to dump the  coordinats after ' + 
                     'the 35th, 46th, and 72nd steps.  Default is ' + 
                     'to skip this step.', default=None)
+parser.add_argument('--revert_to_stationary_grid', dest="stationary_grid", action="store_true",
+                    help='Tells the program to use the stationary grid.  Default is to use the ' +
+                    'grid designed with more grid steps at the region where electrons are.', default=False)
 
 
 args = parser.parse_args()
@@ -93,6 +104,7 @@ from discrete_fourspace.mesh import get_supremum_index
 from injectors.injector_classes import ElectronInjector
 from injectors.steves_uem_injection import steves_injectelectrons
 from class_and_config_conversion import set_attributes_with_config_section
+from moving_grid.moving_classes import SyncToCOM
 from warp import *
 #from histplot import *
 
@@ -208,27 +220,22 @@ if args.dump_list is not None: #Install the phase volume dump.
   phase_volume_dump = DumpBySteps(dump_phase_volume,electron_injector.getElectronContainer(),
         args.electrons_per_macroparticle*top.emass,top,dump_steps)
   installafterstep(phase_volume_dump.callFunction)
-"""
- Generate the PIC code
-   * 3D code "w3d" is always used here: 3d mover is same and 
-       field solver setup different for rz and 3d code. 
-   * DO NOT use package("wrz"). This uses old r-z code by 
-       Debbie Callahan that has not been maintained.  
-   * Initial field solve will be carried out on generate() call 
-   * Since no particles are present till timesteps are taken, 
-       the initial field will not include emitted electrons.  
-   * If the field_solver_off option has been set to true,
-     this initial field is the only one used in the simulation.
-"""
+
+if args.stationary_grid is False:
+  com_sync = SyncToCOM(top, electron_injector.getElectronContainer())
+  installbeforestep(com_sync.callFunction)
+
 package("w3d") 
 generate() 
 if args.field_solver_off:
+  print "Turning field solver off."
   solver.ldosolve = False
 
 # Generate initial plots
-ix_cen = get_supremum_index(w3d.xmesh,0)
-iy_cen = get_supremum_index(w3d.ymesh,0)
-electric_potential_plots(ix_cen,iy_cen)
+if args.sym_type not in ["em2d","em3d"]: 
+  ix_cen = get_supremum_index(w3d.xmesh,0)
+  iy_cen = get_supremum_index(w3d.ymesh,0)
+  electric_potential_plots(ix_cen,iy_cen)
 
 # Advance simulation through each step interval set  
 for ii in range(len(adv_steps)):
