@@ -84,4 +84,4 @@ can be access:
 
   git checkout v-1.1 --- version including the new plot_conductors utility.
 
-  git checkout v-1.2 --- version including the new field and continue simulation utilities.
+  git checkout v-1.1 --- version including the new field and continue simulation utilities.
