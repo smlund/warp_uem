@@ -18,7 +18,7 @@ class FieldLoader(object):
   """
 
   def __init__(self,config_filepath=None,config=None,section="field parameters",
-               time_dependent_function=None, **kwargs):
+               time_dependent_function=None, scale=1.0, **kwargs):
     """
     Loads the config_filepath and puts the elements into the objects attributes.
     Also loads and saves the fields. 
@@ -43,6 +43,7 @@ class FieldLoader(object):
         to be used if a distance needs to be calculated.
       time_dependent_function: An option function callback (function is a function of top.time)
         that can add time dependence to the field.  Default is no such function.
+      scale: An option that provides a hook to scale the field(s) being loaded.
     """
     if config_filepath is None and config is None:
       raise Exception("Either the config_filepath needs to be specified or a config parser object " + 
@@ -71,7 +72,7 @@ class FieldLoader(object):
         field_type = option.replace("_pickled_field","")
         self.fields[field_type] = pickle.load( open(config.get(section,option), "rb") )
         for component in self.fields[field_type]:
-          self.fields[field_type][component] = np.array(self.fields[field_type][component],order="FORTRAN")
+          self.fields[field_type][component] = scale*np.array(self.fields[field_type][component],order="FORTRAN")
     self.time_dependent_function = time_dependent_function
 
   def isRZ(self):
