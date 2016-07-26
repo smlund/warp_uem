@@ -130,3 +130,27 @@ def sine_at_com_distance(coordinate_array_dict,rf_center,amplitude,
     return amplitude*np.sin(omega*(time-arrival_time) + phase_shift)
   
   return sine_function
+
+def constant_scalor(scale):
+  """
+  Defines and decorates a constant function that returns the constant 
+  scalor only.  There is no time dependence.  I'm using this to 
+  simply scale my input field so that I need not need to create a 
+  field file for each field I introduce.
+  Args:
+      scale:  A constant used to scale the field.
+  """
+  
+  def constant_function(time,scale=scale)
+    """
+    A local function that has implicit dependence on time;
+    however time only appears as an argument.  This allows us to 
+    hijack the scaling of the field.
+    Args:
+      time: The time that will be supplied when this function is called.
+      scale: A constant used to scale the field.
+    """
+    return scale
+
+  return constant_function
+    
