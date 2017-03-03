@@ -1,7 +1,7 @@
 from coordinates.coordinate_vector_3d import Cartesian3DVector
 from warp import *
 
-def steves_injectelectrons(top, t_inj, x_inj, y_inj, z_inj, px_inj, py_inj, pz_inj, charg_mass_ratio,
+def steves_injectelectrons(top, t_inj, x_inj, y_inj, z_inj, px_inj, py_inj, pz_inj, charge_mass_ratio,
             electrons, flags={}):
   """
   I tried my own approach, but it was signifcantly slower and broken to boot (I see why, but I didn't
@@ -21,7 +21,7 @@ def steves_injectelectrons(top, t_inj, x_inj, y_inj, z_inj, px_inj, py_inj, pz_i
       top: The top object from warp.
       (t,x,y,z,px,py,pz)_inj: Numpy arrays with the time and phase coordinates of the particles.
       charge_mass_ratio: e/m_e
-      electrons: A container holding the elctrons.
+      electrons: A container holding the electrons.
       flags: A dictionary of true/false flags.
     Return value:
       None --- although the electrons container is modified in place.
@@ -41,19 +41,29 @@ def steves_injectelectrons(top, t_inj, x_inj, y_inj, z_inj, px_inj, py_inj, pz_i
   #ginj  = sqrt(1. + (pxinj**2 + pyinj**2 + pzinj**2)/(emass*clight)**2 )
   #giinj = 1./ginj
   giinj = ones(ninj)     # inverse gamma = 1., NR limit 
-  vxinj = giinj*pxinj/top.emass 
+  vxinj = pxinj/top.emass 
   vyinj = giinj*pyinj/top.emass 
   vzinj = giinj*pzinj/top.emass 
   # Adjust particle coordinates (Nonrelativistic formulas) to inject 
-  if "advance_position" in flags:
-    if flags["advance_position"]:
+  if "adjust_position" in flags.keys():
+    if flags["adjust_position"]:
       xinj,yinj,zinj = advance_position_over_remaining_time(top.time+top.dt,tinj,xinj,yinj,zinj,
                          vxinj,vyinj,vzinj)
-  if "advance_velocity" in flags:
-    if flags["advance_velocity"]:
-      vxinj,vyinj,vzinj = advance_position_over_remaining_time(top.time+top.dt,vxinj,vyinj,vzinj)
+  if "adjust_velocity" in flags.keys():
+    if flags["adjust_velocity"]:
+      vxinj,vyinj,vzinj = advance_velocity_over_remaining_time(top.time+top.dt,tinj,xinj,yinj,zinj,
+                            vxinj,vyinj,vzinj,charge_mass_ratio, electrons, top.dt)
 
   # Inject electron macroparticles 
+  """
+  print(xinj)
+  print(yinj)
+  print(zinj)
+  print(vxinj)
+  print(vyinj)
+  print(vzinj)
+  print(giinj)
+  """
   electrons.addparticles(x=xinj,y=yinj,z=zinj,vx=vxinj,vy=vyinj,vz=vzinj,gi=giinj)
 
 def continue_injectelectrons(top, xinj, yinj, zinj, vxinj, vyinj, vzinj, electrons):
@@ -89,7 +99,7 @@ def advance_position_over_remaining_time(goal_time,tinj,xinj,yinj,zinj,vxinj,vyi
   zinj += vzinj*dt 
   return (xinj,yinj,zinj)
 
-def advance_velocity_over_remaining_time(goal_time,tinj,xinj,yinj,zinj,vxinj,vyinj,vzinj,charge_mass_ratio):
+def advance_velocity_over_remaining_time(goal_time,tinj,xinj,yinj,zinj,vxinj,vyinj,vzinj,charge_mass_ratio, electrons, dt):
   """
   Advances the particle from its attribute time to the goal time.
   velocity correction using both E- and B-fields: B-field only 
@@ -101,9 +111,14 @@ def advance_velocity_over_remaining_time(goal_time,tinj,xinj,yinj,zinj,vxinj,vyi
     Return value:
       (vx,vy,vz)_inj: Numpy arrays with velocity coordinates of the particles.
   """
-  ex = zeros(ninj); ey = zeros(ninj); ez = zeros(ninj) 
-  bx = zeros(ninj); by = zeros(ninj); bz = zeros(ninj)
-  fetche3dfrompositions(electrons.sid,1,len(phase_volume_to_inject),xinj,yinj,zinj,ex,ey,ez,bx,by,bz)
+  ninj = len(xinj)
+  ex = zeros(ninj) 
+  ey = zeros(ninj)
+  ez = zeros(ninj) 
+  bx = zeros(ninj)
+  by = zeros(ninj)
+  bz = zeros(ninj)
+  fetche3dfrompositions(electrons.sid,1,ninj,xinj,yinj,zinj,ex,ey,ez,bx,by,bz)
   vxinj += -charge_mass_ratio*ex*dt - charge_mass_ratio*(vyinj*bz-vzinj*by)*dt  
   vyinj += -charge_mass_ratio*ey*dt - charge_mass_ratio*(vzinj*bx-vxinj*bz)*dt 
   vzinj += -charge_mass_ratio*ez*dt - charge_mass_ratio*(vxinj*by-vzinj*bx)*dt 
