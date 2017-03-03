@@ -1,5 +1,6 @@
 import numpy
 import cPickle as pickle
+from warp import *
 
 def phase_volume_pickle_loader(pickle_dict_file,time_conversion=1.,
           position_conversion=1.,momentum_conversion=1.,**kwargs):
@@ -60,3 +61,21 @@ def get_pulse_velocity_from_momentum(coordinate_array_dict,mass,direction="z"):
   mean_p = numpy.mean(coordinate_array_dict["p"+direction])
   gamma  = numpy.sqrt(1. + (mean_p/(mass*clight))**2 )
   return mean_p/(mass*gamma)
+
+def get_distribution_average(filepath,component="z"):
+  """
+  Reads in the distbution coordinates and calculates the returns the mean
+  z value.
+  Args:
+    filepath:  The path to the particles coordinates.
+    component: The desired over which the average will be taken.
+  Return value:
+    The mean position in the provided direction.
+  """
+  try:
+    keys = ["x", "y", "z", "3", "4", "5", "6", "7", "8"]
+    data = getdatafromtextfile(filepath,nskip=0,dims=[9,None]) 
+  except:
+    keys = ["x", "y", "z", "3", "4", "5"]
+    data = getdatafromtextfile(filepath,nskip=0,dims=[6,None]) 
+  return data[keys.index(component)].mean()

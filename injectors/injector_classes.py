@@ -1,6 +1,8 @@
 from fundamental_classes.user_event import UserEvent
 from injectors.io import phase_volume_pickle_loader
 from warp import * #Need for species
+from scipy import constants
+
 class ElectronInjector(UserEvent):
   """
   A class to provide the interface with the the injector
@@ -24,12 +26,14 @@ class ElectronInjector(UserEvent):
         by the callback function for electron injecton.
       phase_volume: A timed phase volume object containing the injection time 
         and the x, y, z an px, py, pz coordinates of the N particles.  A phase
-        volume can be found in my coordinates package.
+        volume can be found in my coordinates package.  This is assumed to be in \
+        Cosy dump format.
       flags: A dictionary of additional terms that can be passed to
         the callback function.  This is meant to hold True/False flags.
     """
     self.callback = callback
     t, x, y, z, px, py, pz = phase_volume_pickle_loader(filepath,**kwargs)
+    self.n = len(x)
     electrons = Species(type=Electron,weight=weight,name="Electron")
     args=[top, t, x, y, z, px, py, pz, chage_mass_ratio, electrons, flags]
     UserEvent.__init__(self,callback,args) #This partially freezes the attributes
@@ -53,7 +57,7 @@ class SingleElectronInjector(UserEvent):
   the simulation.
   """
 
-  def __init__(self, callback, top, filepath, weight, **kwargs):
+  def __init__(self, callback, top, filepath, weight, input_format=None, **kwargs):
     """
     The init method captures what happens when instance = ElectronInjector()
     is called.  This passes the callback function and the 
@@ -65,10 +69,24 @@ class SingleElectronInjector(UserEvent):
       callback: The function to that will be called when
         injection is called.
       filepath: Contains the file with particle coordinates in it
-        in ascii format.
+        in ascii format.  The filepath is assumed to have warp dumped format.
     """
     self.callback = callback
-    [x, y, z, px, py, pz, vx, vy, vz] = getdatafromtextfile(filepath,nskip=0,dims=[9,None]) 
+    if input_format is None:
+      try:
+        [x, y, z, px, py, pz, vx, vy, vz] = getdatafromtextfile(filepath,nskip=0,dims=[9,None]) 
+      except AssertionError:
+        clight = constants.physical_constants["speed of light in vacuum"][0]
+        emass = constants.physical_constants["electron mass energy equivalent in MeV"][0]
+        [x, y, z, px, py, pz] = getdatafromtextfile(filepath,nskip=0,dims=[6,None]) 
+        gamma  = sqrt(1. + (px**2 + py**2 + pz**2)/(emass*clight)**2 )
+        gamma_inv = 1./gamma
+        vx = gamma_inv*px/emass 
+        vy = gamma_inv*py/emass 
+        vz = gamma_inv*pz/emass 
+    elif input_format == "xv":
+      [x, y, z, vx, vy, vz] = getdatafromtextfile(filepath,nskip=0,dims=[6,None]) 
+    self.n = len(x)
     electrons = Species(type=Electron,weight=weight,name="Electron")
     args=[top, x, y, z, vx, vy, vz, electrons]
     self.injected = False
@@ -82,6 +100,7 @@ class SingleElectronInjector(UserEvent):
     if not self.injected:
       UserEvent.callFunction(self) #Inject electrons immediately.
       self.injected = True
+      print("Particles injected")
 
   def getElectronContainer(self):
     """
