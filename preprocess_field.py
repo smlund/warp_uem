@@ -23,6 +23,9 @@ parser.add_argument('-k', '--pickle_front', dest="pickle_front", type=str,
                     help='Path to which _electric.pckl and/or _magnetic.pckl will' +
                     'be added and in which the processed field is stored.  Default' +
                     'is the raw_field_file without its extension.', default=None) 
+parser.add_argument('-s', '--scale', dest="scale", type=str,
+                    help='Divides the field by the provided constant.  ' +
+                    'Default is a scale of 1.', default=1) 
 args = parser.parse_args()
 from fields.field_preprocessor import FieldPreProcessor
 
@@ -30,5 +33,5 @@ print "Argument dictionary: "
 print "\t" + "\n\t".join([k + " = " + str(v) for k, v in vars(args).iteritems()])
 
 field_preprocessor = FieldPreProcessor(args.raw_field_file,
-                      formattype = args.formattype)
-field_preprocessor.archive(args.pickle_front,args.config_front)
+                      formattype = args.formattype, scale=args.scale)
+field_preprocessor.archive(pickle_file_front=args.pickle_front,config_file_front=args.config_front)

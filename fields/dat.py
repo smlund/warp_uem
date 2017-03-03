@@ -2,7 +2,7 @@ import csv
 from warp import *
 from fields.standard import count_lines, convert_list_of_dicts_to_dict_of_numpy_arrays
 
-def read_dat_file_as_numpy_arrays(dat_file):
+def read_dat_file_as_numpy_arrays(dat_file,**kwargs):
   """
   Wraps the read_dat_file function so that the "data"
   output field is now a dictionary of numpy arrays instead of 
@@ -16,11 +16,11 @@ def read_dat_file_as_numpy_arrays(dat_file):
         appear in the file.
       data: A dictionary of numpy arrays keyed by the fieldnames.
   """
-  output = read_dat_file(dat_file)
+  output = read_dat_file(dat_file,**kwargs)
   output["data"] = convert_list_of_dicts_to_dict_of_numpy_arrays(output["data"])
   return output
 
-def read_dat_file(dat_file):
+def read_dat_file(dat_file,scale=1,**kwargs):
   """
   Reads a dat field file (as given to me by Chung-Yu Ruan)
   returning an object with elements data.  The
@@ -57,6 +57,8 @@ def read_dat_file(dat_file):
       for fieldname in output["fieldnames"]:
         if fieldname in ["x","y","z","r"]:
           row[fieldname] = row[fieldname]/1000 #Fix units
+        if fieldname.startswith("E") or fieldname.startswith("B"):
+          row[fieldname] = row[fieldname]/float(scale)
       table.append(row)
     output["data"] = table
   return output
