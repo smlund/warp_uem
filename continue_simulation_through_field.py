@@ -40,6 +40,9 @@ parser.add_argument('input_file', type=str,
 parser.add_argument('config_file', type=str, 
                     help='The config file.  Contains a bunch of parameters ' +
                     'and references to other config files.')
+parser.add_argument('--input_format', dest="input_format", type=str, 
+                    help='Describes the format of the input file.  Right now, only "xv" is supported.' +
+                     '"xp" is supported by default as is "xpv".',default=None)
 parser.add_argument('--3D_simulation',  
                     dest="sym_type", action="store_const", const="w3d",
                     help='Specify the use of "w3d" aka the 3 dimensional simulation.  ' +
@@ -76,10 +79,22 @@ parser.add_argument('--phase_space_dump_step_list', dest="dump_list", type=str,
                     'For example, 35,46,72 will tell the program to dump the  coordinats after ' + 
                     'the 35th, 46th, and 72nd steps.  Default is ' + 
                     'to skip this step.', default=None)
+parser.add_argument('--phase_space_locations_dump', dest="locations_dump", type=str,
+                    help='Tells the program to print the x, y, z, px, py, pz coordinates ' +
+                    'of all the macroparticles at the listed locations (determined by center of beam).' + 
+                    'The value of this parameters should be a dictionary of form ' + 
+                    'key1:value1,key2:value2,etc. Key1 will be used for the output name ' +
+                    'and value1 will be the z compared to the center of the beam.  Default is ' + 
+                    'to skip this step.', default=None)
 parser.add_argument('-a','--rf_amplitude', 
                     dest="amplitude", type=float, 
                     help='A scaling factor for the rf field.  ' +
                     'The default is 1.', default=1.)
+parser.add_argument('--crossing_time', 
+                    dest="crossing_time", type=str, 
+                    help='A file path in which the crossing times and the post rf cavity positions' +
+                    'are stored.  If not specified, these values are not recorded.', default=None)
+
 
 
 args = parser.parse_args()
@@ -92,12 +107,13 @@ from config.my_config import parse_key_as_numpy_array
 from config.simulation_type import get_mesh_symmetry_factor, get_solver
 from config.elements import load_elements
 from diagnostics.diagnostic_classes import DiagnosticsByTimes, DumpBySteps
+from diagnostics.diagnostic_classes import DumpAtLocations, RecordTransitionTime
 from diagnostics.phase_volume import dump_phase_volume
 from diagnostics.steves_uem_diagnostics import steves_plots, electric_potential_plots, just_vz_vs_z
 from discrete_fourspace.mesh import get_supremum_index
 from injectors.injector_classes import SingleElectronInjector
 from injectors.steves_uem_injection import continue_injectelectrons
-from injectors.io import get_pulse_velocity_from_momentum
+from injectors.io import get_pulse_velocity_from_momentum, get_distribution_average
 from class_and_config_conversion import set_attributes_with_config_section
 from fields.field_loader import FieldLoader
 from fields.time_dependent_functions import sine_at_com_distance
@@ -133,8 +149,8 @@ set_attributes_with_config_section(f3d, config, "f3d parameters")
 
 # Create the electron beam species 
 #momentum_unit_conversion = jperev*1.*MV/clight #Input is in MeV/c and we want si units.
-zmin = 0.0145
-zmax = 0.0155
+zavg = get_distribution_average(args.input_file)
+
 clight = 299792458
 
 #Derived parameters
@@ -158,13 +174,13 @@ top.prwall = xmax  # cylinder radius to absorb particles if
     #top.zwindows[:,5] = 100.*um + array([-w3d.dz,w3d.dz])/2.
 w3d.nx = sym_factor*int(xmax/dx)
 w3d.ny = sym_factor*int(xmax/dx)
-w3d.nz = int(zmax/dz)
+w3d.nz = int(2*z_extent/dz)
 w3d.xmmin = -xmax
 w3d.xmmax =  xmax
 w3d.ymmin = -xmax
 w3d.ymmax =  xmax 
-w3d.zmmin =  zmin - z_extent
-w3d.zmmax =  zmax + z_extent
+w3d.zmmin =  zavg - z_extent
+w3d.zmmax =  zavg + z_extent
     #w3d.dz = (w3d.zmmax - w3d.zmmin)/w3d.nz
     #w3d.dx = (w3d.xmmax - w3d.xmmin)/w3d.nx
 
@@ -173,7 +189,7 @@ solver = get_solver(args.sym_type, top, w3d)
 registersolver(solver)
 
 electron_injector = SingleElectronInjector(continue_injectelectrons, top, args.input_file,
-                      args.electrons_per_macroparticle)
+                      args.electrons_per_macroparticle,input_format=args.input_format)
 installuserinjection(electron_injector.callFunction)  # install injection function in timestep 
 
 #top.vbeamfrm = get_pulse_velocity_from_momentum(electron_injector.getDictOfCoordinateArrays(),top.emass)/clight
@@ -193,8 +209,8 @@ for option in  config.options("Field elements"):
     frequency = field_loader.config.get(field_loader.section,"frequency")
     field_loader.time_dependent_function = sine_at_com_distance(
                                 electron_injector.getDictOfCoordinateArrays(),
-                                field_loader.zlen/2.0 + field_loader.zmin,
-                                args.amplitude, 0, frequency, top.emass)
+                                field_loader.zmin, field_loader.zlen,
+                                args.amplitude, 0., frequency)
   field_loader.installFields(top)
   field_loader.diagnosticPlots(top,loops=False)
 print("Setting up Diagnostics")
@@ -211,6 +227,21 @@ if args.dump_list is not None: #Install the phase volume dump.
   phase_volume_dump = DumpBySteps(dump_phase_volume,electron_injector.getElectronContainer(),
         args.electrons_per_macroparticle*top.emass,top,dump_steps)
   installafterstep(phase_volume_dump.callFunction)
+if args.locations_dump is not None: #Install the phase volume dump.
+  dump_locations_list = args.locations_dump.split(",")
+  location_keys = []
+  location_values = []
+  for location_pair in dump_locations_list:
+    key, value = location_pair.split(":")
+    location_keys.append(str(key))
+    location_values.append(float(value))
+  phase_volume_dump = DumpAtLocations(dump_phase_volume,electron_injector.getElectronContainer(),
+        args.electrons_per_macroparticle*top.emass,location_keys,location_values)
+  installafterstep(phase_volume_dump.callFunction)
+if args.crossing_time is not None:
+  transition_time_record = RecordTransitionTime(adv_dt[0],args.crossing_time,field_loader.zmin,
+    field_loader.zmax,electron_injector.n,electron_injector.getElectronContainer())
+  installafterstep(transition_time_record.callFunction)
 
 package("w3d") 
 generate() 
@@ -220,7 +251,10 @@ if args.field_solver_off:
 print "Advancing simulation through each step interval set"
 for ii in range(len(adv_steps)):
   top.dt = adv_dt[ii]
+  if args.crossing_time is not None:
+    transition_time_record.time[1] = adv_dt[ii]
   step(adv_steps[ii])  
+  #top.time += top.dt
 
 #Get statistics for beam
 
