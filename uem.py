@@ -56,6 +56,10 @@ parser.add_argument('-e','--extraction_field',
                     dest="extraction_field", type=float,
                     help='Specifies the extraction electric field gradient in MV.', 
                     default=1.)
+parser.add_argument('--potential',
+                    dest='potential', type=float,  
+                    help="specified the potential of the anode assuming the cathode is at 0 V.  Units in MV.",
+                    default=None)
 parser.add_argument('-m','--electrons_per_macroparticle', 
                     dest="electrons_per_macroparticle", type=float, 
                     help='The number of electrons per macroparticle for the ' +
@@ -87,6 +91,8 @@ parser.add_argument('--phase_space_dump_step_list', dest="dump_list", type=str,
 parser.add_argument('--revert_to_stationary_grid', dest="stationary_grid", action="store_true",
                     help='Tells the program to use the stationary grid.  Default is to use the ' +
                     'grid designed with more grid steps at the region where electrons are.', default=False)
+parser.add_argument('--single_inject', dest="single_inject", action="store_true",
+                    help='Tells the program to use the stationary grid.  Default is to separate into individual time steps (False). ', default=False)
 
 
 args = parser.parse_args()
@@ -101,8 +107,9 @@ from diagnostics.diagnostic_classes import DiagnosticsByTimes, DumpBySteps
 from diagnostics.phase_volume import dump_phase_volume
 from diagnostics.steves_uem_diagnostics import steves_plots, electric_potential_plots
 from discrete_fourspace.mesh import get_supremum_index
-from injectors.injector_classes import ElectronInjector
+from injectors.injector_classes import ElectronInjector, SingleElectronInjector
 from injectors.steves_uem_injection import steves_injectelectrons
+from injectors.steves_uem_injection import continue_injectelectrons
 from class_and_config_conversion import set_attributes_with_config_section
 from moving_grid.moving_classes import SyncToCOM
 from warp import *
@@ -115,8 +122,15 @@ setup()
 config = MyConfigParser()
 config.read(args.config_file)
 
+#adv_dt = config.get("Simulation parameters", "adv_dt")# Numpy array of dts
 adv_dt = array(config.get("Simulation parameters", "adv_dt"))# Numpy array of dts
 adv_steps = array(config.get("Simulation parameters", "adv_steps")) #Number of steps for each dt 
+try:
+  len(adv_dt)
+except:
+  adv_dt = array([adv_dt])
+  adv_steps = array([adv_steps])
+#adv_steps = config.get("Simulation parameters", "adv_steps") #Number of steps for each dt 
 #Mesh size
 dx = config.get("Simulation parameters","dx")
 dz = config.get("Simulation parameters","dz")
@@ -191,20 +205,34 @@ conductor_elements = load_elements(config,"Conductor elements")
 #                        at bias needed to achieve specified diode gradient 
 #     * plates will be loaded after field solver employed is registered (necessary) 
 
-conductor_elements.cathode.voltage = -grad*conductor_elements.cathode.voltage  # Cathode bias [V]
-conductor_elements.anode.voltage = -grad*conductor_elements.anode.voltage  # Cathode bias [V]
+#conductor_elements.cathode.voltage = -100000.0  # Cathode bias [V]
+if args.potential is not None:
+    conductor_elements.cathode.voltage = 0
+    conductor_elements.anode.voltage = args.potential
+else:
+    anode_voltage = grad*conductor_elements.cathode.voltage  # Anode bias [V]
+    conductor_elements.cathode.voltage = grad*conductor_elements.anode.voltage  # Cathode bias [V]
+    conductor_elements.anode.voltage = anode_voltage
+print("Cathode voltage = " + str(conductor_elements.cathode.voltage) + " V")
+print("Anode voltage = " + str(conductor_elements.anode.voltage) + " V")
+#conductor_elements.anode.voltage = 0.0  # Anode bias [V]
 
 for conductor_element in conductor_elements:
    installconductor(conductor_element)  # install conductors after field solver registered
 
 # Create the electron beam species 
-momentum_unit_conversion = jperev*1.*MV/clight #Input is in MeV/c and we want si units.
-electron_injector = ElectronInjector(steves_injectelectrons,top, args.input_file,
+if args.single_inject:
+  electron_injector = SingleElectronInjector(continue_injectelectrons, top, args.input_file,
+                      args.electrons_per_macroparticle)
+  installparticleloader(electron_injector.callFunction)
+else:
+  momentum_unit_conversion = jperev*1.*MV/clight #Input is in MeV/c and we want si units.
+  electron_injector = ElectronInjector(steves_injectelectrons,top, args.input_file,
                       top.echarge/top.emass, args.electrons_per_macroparticle, 
                       flags={"adjust_position": args.adjust_position,
                              "adjust_velocity": args.adjust_velocity},
                       momentum_conversion=momentum_unit_conversion/args.electrons_per_macroparticle)
-installuserinjection(electron_injector.callFunction)  # install injection function in timestep 
+  installuserinjection(electron_injector.callFunction)  # install injection function in timestep 
 
 #Diagnostics
 diagnostics = DiagnosticsByTimes(steves_plots,top,top,diagnostic_times)
