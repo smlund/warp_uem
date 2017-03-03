@@ -326,7 +326,7 @@ class FieldPreProcessor(object):
       del self.fields[field_type]["r"]
         
 
-def read_file_as_dict_of_numpy_arrays(filepath,formattype=""):
+def read_file_as_dict_of_numpy_arrays(filepath,formattype="",**kwargs):
 
   """
   Takes a filepath and returns a dict of numpy arrays.
@@ -343,8 +343,8 @@ def read_file_as_dict_of_numpy_arrays(filepath,formattype=""):
   """
   filepath_no_extension, file_extension = os.path.splitext(filepath)
   if formattype == "Poisson" or file_extension == ".dat":
-    return read_dat_file_as_numpy_arrays(filepath)
+    return read_dat_file_as_numpy_arrays(filepath,**kwargs)
   if formattype == "RF ascii":
-    return read_rf_ascii_file_as_numpy_arrays(filepath)
+    return read_rf_ascii_file_as_numpy_arrays(filepath,**kwargs)
   raise Exception("The formattype and file_extension is not supported.")
 

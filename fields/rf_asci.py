@@ -8,7 +8,7 @@ Essentially it is just 2 header lines plus the data.  The first is the
 fieldnames, the second is the dimensions, and the third on is the data.
 """
 
-def read_rf_ascii_file_as_numpy_arrays(dat_file):
+def read_rf_ascii_file_as_numpy_arrays(dat_file,**kwargs):
   """
   Wraps the read_rf_ascii_file function so that the "data"
   output field is now a dictionary of numpy arrays instead of 
@@ -22,11 +22,11 @@ def read_rf_ascii_file_as_numpy_arrays(dat_file):
         appear in the file.
       data: A dictionary of numpy arrays keyed by the fieldnames.
   """
-  output = read_rf_ascii_file(dat_file)
+  output = read_rf_ascii_file(dat_file,**kwargs)
   output["data"] = convert_list_of_dicts_to_dict_of_numpy_arrays(output["data"])
   return output
 
-def read_rf_ascii_file(dat_file):
+def read_rf_ascii_file(dat_file,scale=1,**kwargs):
   """
   Reads a rf ascii field file (as given to me by Chung-Yu Ruan)
   returning an object with elements data.  The
@@ -57,7 +57,7 @@ def read_rf_ascii_file(dat_file):
       elif p == "cm":
         unit_conversion.append(0.01)
       elif p == "MV/m":
-        unit_conversion.append(1000000)
+        unit_conversion.append(1000000.0/float(scale))
       else:
         unit_conversion.append(1)
     #Load data as floats.

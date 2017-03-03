@@ -18,7 +18,7 @@ class FieldLoader(object):
   """
 
   def __init__(self,config_filepath=None,config=None,section="field parameters",
-               time_dependent_function=None, scale=1.0, **kwargs):
+               time_dependent_function=None, scale=1.0, normalize=None, **kwargs):
     """
     Loads the config_filepath and puts the elements into the objects attributes.
     Also loads and saves the fields. 
