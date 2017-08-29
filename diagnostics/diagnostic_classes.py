@@ -67,7 +67,7 @@ class DumpBySteps(UserEvent):
   transparent then using UserEvent.
   """
 
-  def __init__(self,callback,obj,mass,top,steps):
+  def __init__(self,callback,obj,mass,top,steps,**kwargs):
     """
     The init method captures what happens when instance = DiagnosticsBySteps()
     is called.  This passes the callback function and the 
@@ -86,6 +86,7 @@ class DumpBySteps(UserEvent):
     """
     args = [obj,mass]
     additional_attr = {"top": top, "steps": list(steps)}
+    self.keywordargs = kwargs
     UserEvent.__init__(self,callback,args,additional_attr) #This partially freezes the attributes
 
   def callFunction(self,*args,**kwargs):
@@ -102,7 +103,7 @@ class DumpBySteps(UserEvent):
     """
     if self.top.it not in self.steps:
       return #Only calls callback when current iteration is in the steps list.
-    self.callback(self.top.it,*self.args)#Star unpacks
+    self.callback(self.top.it,*self.args,**self.keywordargs)#Star unpacks
 
 class DumpAtLocations(UserEvent):
   """

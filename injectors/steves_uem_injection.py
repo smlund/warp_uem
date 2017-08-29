@@ -63,8 +63,11 @@ def steves_injectelectrons(top, t_inj, x_inj, y_inj, z_inj, px_inj, py_inj, pz_i
   print(vyinj)
   print(vzinj)
   print(giinj)
+  print(xinj.size)
+  print(electrons.getn())
   """
   electrons.addparticles(x=xinj,y=yinj,z=zinj,vx=vxinj,vy=vyinj,vz=vzinj,gi=giinj)
+  """print(electrons.getn())"""
 
 def continue_injectelectrons(top, xinj, yinj, zinj, vxinj, vyinj, vzinj, electrons):
   """

@@ -1,3 +1,4 @@
+import numpy as np
 from warp import *
 
 def get_mesh_symmetry_factor(simtype,top,w3d):
@@ -16,7 +17,7 @@ def get_mesh_symmetry_factor(simtype,top,w3d):
       return 1
     else:
       return 2
-  elif simtype in ["wrz","em2d","em3d"]:
+  elif simtype in ["wrz","em2d","em3d","wxy"]:
     return 1 
   raise Exception("Error: simtype not defined")
 
@@ -43,4 +44,10 @@ def get_solver(simtype,top,w3d):
     # r-z ES
     w3d.solvergeom = w3d.RZgeom
     return MRBlock2D()
+  elif simtype == "wxy":
+    # x-y 2 dimensional ES
+    w3d.solvergeom = w3d.XYgeom
+    return MRBlock2D()
   raise Exception("Error: simtype not defined")
+
+

@@ -2,6 +2,7 @@ from fundamental_classes.user_event import UserEvent
 from injectors.io import phase_volume_pickle_loader
 from warp import * #Need for species
 from scipy import constants
+import numpy as np
 
 class ElectronInjector(UserEvent):
   """
@@ -57,7 +58,7 @@ class SingleElectronInjector(UserEvent):
   the simulation.
   """
 
-  def __init__(self, callback, top, filepath, weight, input_format=None, **kwargs):
+  def __init__(self, callback, top, filepath, weight, input_format=None, sigma_r = None, N=None, w3d=None, **kwargs):
     """
     The init method captures what happens when instance = ElectronInjector()
     is called.  This passes the callback function and the 
@@ -84,9 +85,21 @@ class SingleElectronInjector(UserEvent):
         vx = gamma_inv*px/emass 
         vy = gamma_inv*py/emass 
         vz = gamma_inv*pz/emass 
+      self.n = len(x)
     elif input_format == "xv":
       [x, y, z, vx, vy, vz] = getdatafromtextfile(filepath,nskip=0,dims=[6,None]) 
-    self.n = len(x)
+      self.n = len(x)
+    elif input_format == "generate_3d_normal":
+      if sigma_r is None:
+        raise Exception("A sigma_r needs to be provided to generate macroparticle positions.")
+      if N is None:
+        raise Exception("The number of particles needs to be supplied to generate macroparticle positions.")
+      x, y, z = np.random.multivariate_normal([0,0,0], sigma_r**2*np.identity(3), N).T
+      vx = np.zeros(x.size)
+      vy = np.zeros(y.size)
+      vz = np.zeros(z.size)
+      self.n = N
+    self.w3d = w3d #To pass the argument to partiallyPeriodic
     electrons = Species(type=Electron,weight=weight,name="Electron")
     args=[top, x, y, z, vx, vy, vz, electrons]
     self.injected = False
@@ -101,6 +114,20 @@ class SingleElectronInjector(UserEvent):
       UserEvent.callFunction(self) #Inject electrons immediately.
       self.injected = True
       print("Particles injected")
+
+  def partiallyPeriodic(self): 
+    """
+    Goes through the particles and makes sure they stay within
+    the box.
+    """
+    electrons = self.getElectronContainer()
+    z = electrons.getz()
+    print(np.std(z))
+    w3d = self.w3d
+    delta_z = w3d.zmmax-w3d.zmmin
+    if self.injected:
+      z[z < w3d.zmmin] += delta_z
+      z[z > w3d.zmmax] -= delta_z
 
   def getElectronContainer(self):
     """
